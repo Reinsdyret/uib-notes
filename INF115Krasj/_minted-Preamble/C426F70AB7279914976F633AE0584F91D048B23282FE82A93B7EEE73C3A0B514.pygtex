@@ -1,0 +1,5 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{UPDATE}\PYG{+w}{ }\PYG{n}{book}\PYG{+w}{                 }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} tabell}
+\PYG{k}{SET}\PYG{+w}{ }\PYG{n}{title}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}Der satanarchäolügenialkohöllische Wunschpunsch\PYGZdq{}}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{book\PYGZus{}id}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{37}\PYG{p}{;}\PYG{+w}{         }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} betingelse}
+\end{Verbatim}

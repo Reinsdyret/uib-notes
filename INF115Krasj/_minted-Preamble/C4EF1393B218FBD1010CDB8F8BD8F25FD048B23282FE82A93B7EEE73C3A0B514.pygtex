@@ -1,0 +1,8 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{NOT}\PYG{+w}{ }\PYG{k}{NULL}\PYG{+w}{                    }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} verdien er ikke NULL}
+\PYG{k}{UNIQUE}\PYG{+w}{                      }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} kolonnen har ingen verdi flere ganger}
+\PYG{k}{PRIMARY}\PYG{+w}{ }\PYG{k}{KEY}\PYG{p}{(}\PYG{k}{key}\PYG{p}{)}\PYG{+w}{            }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} NOT NULL + UNIQUE}
+\PYG{k}{FOREIGN}\PYG{+w}{ }\PYG{k}{KEY}\PYG{p}{(}\PYG{k}{key}\PYG{p}{)}\PYG{+w}{ }\PYG{k}{REFERENCES}\PYG{+w}{ }\PYG{n}{tabell}\PYG{p}{(}\PYG{k}{key}\PYG{p}{)}\PYG{+w}{ }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} fremmednøkkel}
+\PYG{n}{AGE}\PYG{+w}{ }\PYG{n+nb}{int}\PYG{+w}{ }\PYG{k}{CHECK}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{AGE}\PYG{+w}{ }\PYG{o}{\PYGZgt{}=}\PYG{+w}{ }\PYG{l+m+mi}{18}\PYG{p}{)}\PYG{+w}{   }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} betingelse}
+\PYG{n}{AGE}\PYG{+w}{ }\PYG{n+nb}{int}\PYG{+w}{ }\PYG{k}{DEFAULT}\PYG{+w}{ }\PYG{l+m+mi}{18}\PYG{+w}{          }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} standardverdi}
+\end{Verbatim}

@@ -1,0 +1,12 @@
+\frametitle{Transaksjoner i SQL}
+\begin{minted}{sql}
+START TRANSACTION;      -- her starter transaksjonen
+UPDATE bankaccount      -- ta 20kr fra en bankkonto
+SET money = money - 20  -- dette er ikke korrekt syntaks
+WHERE customer = 42;
+UPDATE bankaccount      -- gi de 20kr til en annen bankkonto
+SET money = money + 20
+WHERE customer = 20;
+COMMIT;                 -- commit hvis alt gikk fint, ellers rollback
+-- ROLLBACK
+\end{minted}

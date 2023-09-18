@@ -1,0 +1,11 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{START}\PYG{+w}{ }\PYG{k}{TRANSACTION}\PYG{p}{;}\PYG{+w}{      }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} her starter transaksjonen}
+\PYG{k}{UPDATE}\PYG{+w}{ }\PYG{n}{bankaccount}\PYG{+w}{      }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} ta 20kr fra en bankkonto}
+\PYG{k}{SET}\PYG{+w}{ }\PYG{n}{money}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{money}\PYG{+w}{ }\PYG{o}{\PYGZhy{}}\PYG{+w}{ }\PYG{l+m+mi}{20}\PYG{+w}{  }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} dette er ikke korrekt syntaks}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{customer}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{42}\PYG{p}{;}
+\PYG{k}{UPDATE}\PYG{+w}{ }\PYG{n}{bankaccount}\PYG{+w}{      }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} gi de 20kr til en annen bankkonto}
+\PYG{k}{SET}\PYG{+w}{ }\PYG{n}{money}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{money}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{l+m+mi}{20}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{customer}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{20}\PYG{p}{;}
+\PYG{k}{COMMIT}\PYG{p}{;}\PYG{+w}{                 }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} commit hvis alt gikk fint, ellers rollback}
+\PYG{c+c1}{\PYGZhy{}\PYGZhy{} ROLLBACK}
+\end{Verbatim}

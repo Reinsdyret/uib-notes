@@ -1,0 +1,10 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{SELECT}\PYG{+w}{ }\PYG{k}{DISTINCT}\PYG{+w}{                     }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} fjerner duplikater}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{navn}\PYG{+w}{ }\PYG{k}{LIKE}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}A\PYGZpc{}\PYGZdq{}}\PYG{+w}{                }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} alt som starter med A}
+\PYG{c+c1}{\PYGZhy{}\PYGZhy{} \PYGZpc{} 0, 1 eller flere tegn}
+\PYG{c+c1}{\PYGZhy{}\PYGZhy{} \PYGZus{} eksakt et tegn}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{category}\PYG{+w}{ }\PYG{k}{IN}\PYG{+w}{ }\PYG{p}{(}\PYG{l+s+ss}{\PYGZdq{}cake\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}bread\PYGZdq{}}\PYG{p}{)}\PYG{+w}{ }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} verdien er i en liste}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{age}\PYG{+w}{ }\PYG{k}{BETWEEN}\PYG{+w}{ }\PYG{l+m+mi}{18}\PYG{+w}{ }\PYG{k}{and}\PYG{+w}{ }\PYG{l+m+mi}{65}\PYG{+w}{         }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} verdien er i en range}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{k}{EXISTS}\PYG{+w}{ }\PYG{p}{(}\PYG{k}{SELECT}\PYG{+w}{ }\PYG{p}{...)}\PYG{+w}{           }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} verdien finnes i en annen query}
+\PYG{p}{(}\PYG{k}{SELECT}\PYG{+w}{ }\PYG{p}{...)}\PYG{+w}{ }\PYG{k}{UNION}\PYG{+w}{ }\PYG{p}{(}\PYG{k}{SELECT}\PYG{+w}{ }\PYG{p}{...)}\PYG{+w}{     }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} union av to queries}
+\end{Verbatim}

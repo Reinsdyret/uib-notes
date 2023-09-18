@@ -1,0 +1,12 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{CREATE}\PYG{+w}{ }\PYG{k}{TABLE}\PYG{+w}{ }\PYG{n}{Persons}\PYG{+w}{ }\PYG{p}{(}
+\PYG{n}{Person\PYGZus{}id}\PYG{+w}{ }\PYG{n+nb}{int}\PYG{p}{,}\PYG{+w}{              }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} [column name] [datatype] [constraints]}
+\PYG{+w}{    }\PYG{n}{LastName}\PYG{+w}{ }\PYG{n+nb}{varchar}\PYG{p}{(}\PYG{l+m+mi}{40}\PYG{p}{)}\PYG{+w}{ }\PYG{k}{NOT}\PYG{+w}{ }\PYG{k}{NULL}\PYG{p}{,}
+\PYG{+w}{    }\PYG{n}{FirstName}\PYG{+w}{ }\PYG{n+nb}{varchar}\PYG{p}{(}\PYG{l+m+mi}{40}\PYG{p}{),}
+\PYG{+w}{    }\PYG{n}{Age}\PYG{+w}{ }\PYG{n+nb}{int}\PYG{p}{,}
+\PYG{+w}{    }\PYG{n}{Department\PYGZus{}id}\PYG{+w}{ }\PYG{n+nb}{int}\PYG{+w}{ }\PYG{k}{UNIQUE}\PYG{p}{,}
+\PYG{+w}{    }\PYG{k}{PRIMARY}\PYG{+w}{ }\PYG{k}{KEY}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{Person\PYGZus{}id}\PYG{p}{),}\PYG{+w}{    }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} primær\PYGZhy{} og fremmednøkler}
+\PYG{+w}{    }\PYG{k}{FOREIGN}\PYG{+w}{ }\PYG{k}{KEY}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{Department\PYGZus{}id}\PYG{p}{)}\PYG{+w}{ }\PYG{k}{REFERENCES}\PYG{+w}{ }\PYG{n}{Department}\PYG{p}{(}\PYG{n}{Department\PYGZus{}id}\PYG{p}{),}
+\PYG{+w}{    }\PYG{k}{CHECK}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{Age}\PYG{o}{\PYGZgt{}=}\PYG{l+m+mi}{18}\PYG{p}{)}\PYG{+w}{             }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} constraints}
+\PYG{p}{);}
+\end{Verbatim}

@@ -1,0 +1,8 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{SELECT}\PYG{+w}{ }\PYG{n}{Order\PYGZus{}id}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{Price}\PYG{p}{,}
+\PYG{k}{CASE}\PYG{+w}{    }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} if betingelser i SELECT}
+\PYG{+w}{    }\PYG{k}{WHEN}\PYG{+w}{ }\PYG{n}{Price}\PYG{+w}{ }\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{l+m+mi}{30}\PYG{+w}{ }\PYG{k}{THEN}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}Won\PYGZsq{}t pay freight\PYGZdq{}}
+\PYG{+w}{    }\PYG{k}{ELSE}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}Freight costs 10\PYGZbs{}\PYGZdl{}\PYGZdq{}}
+\PYG{k}{END}\PYG{+w}{ }\PYG{k}{AS}\PYG{+w}{ }\PYG{n}{FrightCost}
+\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{OrderDetails}\PYG{p}{;}
+\end{Verbatim}

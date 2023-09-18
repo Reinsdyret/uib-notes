@@ -1,0 +1,6 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{UPDATE}\PYG{+w}{ }\PYG{n}{music}\PYG{+w}{                }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} tabell}
+\PYG{k}{SET}\PYG{+w}{ }\PYG{n}{title}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}Supercalifragilisticexpialidocious\PYGZdq{}}\PYG{p}{,}
+\PYG{+w}{   }\PYG{n}{artist}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}Mary Poppins\PYGZdq{}}\PYG{+w}{  }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} oppdatert informasjon}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{song\PYGZus{}id}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{42}\PYG{p}{;}\PYG{+w}{         }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} betingelse}
+\end{Verbatim}

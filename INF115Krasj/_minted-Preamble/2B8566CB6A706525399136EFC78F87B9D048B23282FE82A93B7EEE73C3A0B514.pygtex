@@ -1,0 +1,4 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{DELETE}\PYG{+w}{ }\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{film}\PYG{+w}{        }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} tabell}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{country}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}USA\PYGZdq{}}\PYG{p}{;}\PYG{+w}{  }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} betingelse}
+\end{Verbatim}

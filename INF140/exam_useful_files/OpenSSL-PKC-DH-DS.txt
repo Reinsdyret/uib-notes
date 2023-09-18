@@ -1,0 +1,47 @@
+# Source: https://www.openssl.org/docs/man1.1.1/man1/genpkey.html
+
+
+# Diffie-Hellman Key Generation
+
+openssl genpkey -genparam -algorithm DH -pkeyopt dh_paramgen_prime_len:1024          # default len = 2048
+openssl genpkey -genparam -algorithm DH -pkeyopt dh_paramgen_prime_len:1024 -text
+openssl genpkey -genparam -algorithm DH -out dhp.pem                                 # output the DH parameter to a file (default generator a=2)
+
+
+openssl genpkey -paramfile dhp.pem -out dhkey1.pem                                   # User1 generate key dhkey1 from dhp.pem
+openssl pkey -in dhkey1.pem -text                                                    # Print User1's key pair
+openssl pkey -in dhkey1.pem -text_pub                                                # Print User1's public key only
+openssl pkey -in dhkey1.pem -pubout -out dhpub1.pem                                  # Output User1's pub key to dhpub1.pem
+
+openssl genpkey -paramfile dhp.pem -out dhkey2.pem                                   # User2 generate key dhkey2 from dhp.pem
+openssl pkey -in dhkey2.pem -text                                                    # Print User2's key pair
+openssl pkey -in dhkey2.pem -text_pub                                                # Print User2's public key only
+openssl pkey -in dhkey2.pem -pubout -out dhpub2.pem                                  # Output User2's pub key to dhpub2.pem
+
+openssl pkeyutl -derive -inkey dhkey1.pem -peerkey dhpub2.pem -out secret1.bin       # User1 generate shared key with User2, output to secret1.bin
+opensslrpkeyutl -derive -inkey dhkey2.pem -peerkey dhpub1.pem -out secret2.bin       # User2 generate shared key with User1, output to secret2.bin
+
+
+openssl enc -aes-256-cbc -kfile secret1.bin -in SampleFile.txt -out SampleFile.enc   # User1 encrypt a file with secret1.bin
+openssl enc -aes-256-cbc -d -kfile secret2.bin -in SampleFile.enc                    # User2 decrypt the encrypted SampleFile.enc with secret2.bin
+
+# Digital Signature with RSA
+
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out rsa-key.pem
+openssl pkey -in rsa-key.pem -pubout -out rsa-key.pub                     
+
+openssl pkeyutl -sign -in SampleFile.txt -out sig -inkey rsa-key.pem                 # sign a small sample file
+xxd sig
+
+openssl pkeyutl -verify -in SampleFile.txt -sigfile sig -pubin -inkey rsa-key.pub    # verify the signature of the sample file (the source webpage is buggy)
+
+
+openssl dgst -sha256 -sign rsa-key.pem -out sigL LargeSampleFile.pdf                 # sign a large sample file with SHA256
+openssl dgst -sha256 -verify rsa-key.pub -signature sigL LargeSampleFile.pdf         # verify the signature of the large sample file
+
+
+# Security of Hash is important!!!
+
+openssl dgst -sha1 -sign rsa-key.pem -out sig1 sha1-1.pdf                            # sign a file with SHA1
+openssl dgst -sha1 -sign rsa-key.pem -out sig2 sha1-2.pdf                            # sign another file with SHA1  (The two files collide with SHA1 )
+comp sig1 sig2 

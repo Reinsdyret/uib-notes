@@ -1,0 +1,5 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{SELECT}\PYG{+w}{ }\PYG{k}{DISTINCT}\PYG{+w}{ }\PYG{n}{Country}
+\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{Film}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{k}{year}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{l+m+mi}{1950}
+\end{Verbatim}

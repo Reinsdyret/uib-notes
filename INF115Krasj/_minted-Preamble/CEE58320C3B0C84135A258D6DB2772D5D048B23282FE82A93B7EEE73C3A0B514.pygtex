@@ -1,0 +1,11 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{n+nb}{char}\PYG{p}{(}\PYG{l+m+mi}{20}\PYG{p}{)}\PYG{+w}{            }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} 20 tegn med fast lengde}
+\PYG{n+nb}{varchar}\PYG{p}{(}\PYG{l+m+mi}{20}\PYG{p}{)}\PYG{+w}{         }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} opptil 20 tegn}
+\PYG{n+nb}{text}\PYG{+w}{                }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} tekst med opptil 2\PYGZca{}16 tegn}
+\PYG{n+nb}{int}\PYG{+w}{                 }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} integer (tinyint, smallint, bigint)}
+\PYG{n+nb}{float}\PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{+w}{            }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} float med 2 sifre bak komma}
+\PYG{n+nb}{decimal}\PYG{p}{(}\PYG{l+m+mi}{5}\PYG{p}{,}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{+w}{        }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} 3 sifre før og 2 etter komma}
+\PYG{n}{enum}\PYG{+w}{ }\PYG{p}{(}\PYG{l+s+ss}{\PYGZdq{}INF102\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}INF234\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}INF237\PYGZdq{}}\PYG{p}{)}\PYG{+w}{ }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} en av n verdier}
+\PYG{n+nb}{date}\PYG{+w}{                }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} dato}
+\PYG{k}{timestamp}\PYG{+w}{           }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} unix timestamp}
+\end{Verbatim}

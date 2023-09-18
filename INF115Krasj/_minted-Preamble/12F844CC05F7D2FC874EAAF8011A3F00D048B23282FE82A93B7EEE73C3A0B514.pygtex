@@ -1,0 +1,5 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{SELECT}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{                }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Varianter 2}
+\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{film}\PYG{+w}{               }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Velg en tabell og bruk JOIN og ON}
+\PYG{k}{JOIN}\PYG{+w}{ }\PYG{n}{screening}\PYG{+w}{ }\PYG{k}{ON}\PYG{+w}{ }\PYG{n}{film}\PYG{p}{.}\PYG{n}{film\PYGZus{}id}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{screening}\PYG{p}{.}\PYG{n}{film\PYGZus{}id}\PYG{p}{;}
+\end{Verbatim}

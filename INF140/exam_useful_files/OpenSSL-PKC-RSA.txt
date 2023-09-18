@@ -1,0 +1,58 @@
+# Generate a random prime
+
+    openssl prime -help
+
+    openssl prime -generate -bits 512
+    openssl prime -generate -bits 512 -hex
+
+
+# RSA: Key Generation, Management and Encryption/Decryption 
+
+# Use commands genrsa, rsa, rsautl (not recommended)
+
+    openssl genrsa 1024                                                                 # output key to the shell
+    openssl genrsa -out rsa-key.pem 1024                                                # output key to a file (pem can be other format)
+    openssl genrsa -aes-256-cbc -out rsa-key.pem 1024                                   # encrypt key and out to a file (pem can be other format)
+    
+    openssl rsa -in rsa-key.pem -text                                                   # print the private key in a readable text form
+    openssl rsa -in rsa-key.pem -out rsa-key.pub -pubout                                # output pub key to a file
+    openssl rsa -in rsa-key.pub -pubin -text                                            # print the public key in a readable text form
+
+    echo "OpenSSL" > pass.txt
+    openssl rsautl -in pass.txt -out pass.enc -pubin -inkey rsa-key.pub -encrypt        # Encrypt with public key and output ciphertext to a file (no option -base64)
+    echo "OpenSSL" | openssl rsautl -out pass.enc -pubin -inkey rsa-key.pub -encrypt    # Encrypt message with public key 
+
+    openssl rsautl -in pass.enc -out pass.dec -inkey rsa-key.pem -decrypt               # Decrypt pass.enc with private key
+    cat pass.dec
+    openssl rsautl -in pass.enc  -inkey rsa-key.pem -decrypt                            # Decrypt pass.enc with private key
+
+
+# Use commands genpkey, pkey, pkeyutl (not recommended)
+
+    openssl genpkey -algorithm rsa                                                      # output key to the shell (default key length = 2048 bits)
+    openssl genpkey -algorithm rsa -pkeyopt rsa_keygen_bits:512                         # output key to the shell (key length = 512 bits)
+    openssl genpkey -algorithm rsa -pkeyopt rsa_keygen_bits:4096                        # output key to the shell (key length = 4096 bits)
+    openssl genpkey -algorithm rsa -pkeyopt rsa_keygen_bits:1024 \                      # break line by \
+                                   -pkeyopt -rsa_keygen_pubexp:0x11001                  # output key to the shell (key length = 1024 bits, pubexp = 0x11001)
+    openssl genpkey -algorithm rsa -pkeyopt rsa_keygen_bits:4096 -text                  # print key to the shell in the text form (key length = 4096 bits)
+
+                                                                      
+    openssl genpkey -algorithm rsa -out genpkey-rsa-key.pem                             # print key to the shell in the text form 
+    openssl genpkey -algorithm rsa -aes-128-cbc -out genpkey-rsa-key.pem                # encrypt key and save it in genpkey-rsa-key.pem
+    openssl genpkey -algorithm rsa -aes-128-cbc -out genpkey-rsa-key.pem \
+                                                -pass pass:"123qwe"                     # encrypt key with passphrase and save it in genpkey-rsa-key.pem
+   
+    openssl pkey -in genpkey-rsa-key.pem -text                                          # print the private key in a readable text form
+    openssl pkey -in genpkey-rsa-key.pem -text_pub                                      # print the private key in a readable text form
+    openssl pkey -in genpkey-rsa-key.pem -out genpkey-rsa-key.pub -pubout               # output pub key to a file
+    openssl pkey -in genpkey-rsa-key.pub -pubin -text                                   # print the public key in a readable text form
+
+    echo "OpenSSL" > pass.txt
+    openssl pkeyutl -in pass.txt -out pass.enc \
+                    -pubin -inkey genpkey-rsa-key.pub -encrypt                          # Encrypt with public key and output ciphertext to a file (no option -base64)
+    echo "OpenSSL" | openssl pkeyutl -out pass.enc \
+                    -pubin -inkey genpkey-rsa-key.pub -encrypt                          # Encrypt message with public key 
+
+    openssl pkeyutl -in pass.enc -out pass.dec -inkey genpkey-rsa-key.pem -decrypt      # Decrypt pass.enc with private key
+    cat pass.dec
+    openssl pkeyutl -in pass.enc  -inkey genpkey-rsa-key.pem -decrypt                   # Decrypt pass.enc with private key

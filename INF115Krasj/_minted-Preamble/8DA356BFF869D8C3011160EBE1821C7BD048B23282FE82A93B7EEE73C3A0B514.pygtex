@@ -1,0 +1,6 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{SELECT}\PYG{+w}{ }\PYG{k}{DISTINCT}\PYG{+w}{ }\PYG{n}{title}\PYG{p}{,}\PYG{+w}{ }\PYG{k}{year}
+\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{Film}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{Director}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{Film}\PYG{p}{.}\PYG{n}{dir\PYGZus{}id}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{Director}\PYG{p}{.}\PYG{n}{id}
+\PYG{k}{AND}\PYG{+w}{ }\PYG{n}{Film}\PYG{p}{.}\PYG{k}{year}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{1992}
+\end{Verbatim}

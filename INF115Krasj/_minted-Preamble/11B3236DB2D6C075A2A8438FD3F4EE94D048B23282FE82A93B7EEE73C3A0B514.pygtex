@@ -1,0 +1,9 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{SELECT}\PYG{+w}{ }\PYG{n}{director}\PYG{p}{,}\PYG{+w}{ }\PYG{k}{COUNT}\PYG{p}{(}\PYG{o}{*}\PYG{p}{)}\PYG{+w}{ }\PYG{k}{as}\PYG{+w}{ }\PYG{k}{c}\PYG{+w}{ }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Kolonner}
+\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{movie}\PYG{+w}{                     }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Tabeller}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{country}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}Dabendorf\PYGZdq{}}\PYG{+w}{    }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Betingelser}
+\PYG{k}{GROUP}\PYG{+w}{ }\PYG{k}{BY}\PYG{+w}{ }\PYG{n}{director}\PYG{+w}{              }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Gruppering etter kolonner}
+\PYG{k}{HAVING}\PYG{+w}{ }\PYG{k}{c}\PYG{+w}{ }\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{l+m+mi}{3}\PYG{+w}{                   }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Betingelser etter grupper}
+\PYG{k}{ORDER}\PYG{+w}{ }\PYG{k}{BY}\PYG{+w}{ }\PYG{k}{c}\PYG{+w}{ }\PYG{k}{DESC}\PYG{+w}{                }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Sortering etter kolonner}
+\PYG{k}{LIMIT}\PYG{+w}{ }\PYG{l+m+mi}{3}\PYG{p}{;}\PYG{+w}{                       }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Velg de første n output linjene}
+\end{Verbatim}

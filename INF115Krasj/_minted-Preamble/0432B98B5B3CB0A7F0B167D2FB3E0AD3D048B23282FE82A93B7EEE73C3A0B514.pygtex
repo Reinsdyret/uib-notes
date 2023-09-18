@@ -1,0 +1,5 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{SELECT}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{                }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Varianter 1}
+\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{film}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{screening}\PYG{+w}{    }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} Velg alle tabeller og bruk WHERE}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{film}\PYG{p}{.}\PYG{n}{film\PYGZus{}id}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{screening}\PYG{p}{.}\PYG{n}{film\PYGZus{}id}\PYG{p}{;}
+\end{Verbatim}

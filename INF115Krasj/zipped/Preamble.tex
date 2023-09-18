@@ -1,0 +1,161 @@
+\documentclass[aspectratio=169,fleqn,xcolor={dvipsnames,table},handout]{beamer}
+% Mit HU-Logo
+%\usetheme[pageofpages=of,titlepagelogo=logo-huberlin-500]{hubln}
+% Ohne HU-Logo
+% Laut irgendwelcher internen Regularien darf das HU-Logo nicht von Studierenden benutzt werden
+\usetheme[pageofpages=of]{hubln}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{tabularx}
+\usepackage{hhline}
+\usepackage{array}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{multirow}
+\usepackage{minted}
+%\usepackage{colortbl}
+\usepackage{xcolor}
+\usemintedstyle{monokai} %vs
+%\definecolor{bg}{HTML}{282828}
+\definecolor{bg}{RGB}{40, 40, 40}
+\setminted{bgcolor=black,frame=lines,
+               framesep=2mm}
+\usefonttheme{professionalfonts}
+\setbeamercovered{invisible}
+\hfuzz=8.64pt % Antioverfullbox-inator
+
+\setbeamercolor{block body alerted}{bg=alerted text.fg!10}
+\setbeamercolor{block title alerted}{bg=alerted text.fg!20}
+\setbeamercolor{block body}{bg=structure!10}
+\setbeamercolor{block title}{bg=structure!20}
+\setbeamercolor{block body example}{bg=green!10}
+\setbeamercolor{block title example}{bg=green!20}
+\setbeamertemplate{blocks}[rounded][shadow]
+
+% Befehle für den Präsentationsmodus
+% Die folgenden beiden Befehle erstellen eine Präsentation, die Notizen enthält und beim Öffnen auf zwei Bildschirmen auf einem die aktuelle Folie und auf dem anderen die nächste Folie und die Notizen anzeigt
+% \setbeameroption{show notes}
+% \setbeameroption{show notes on second screen=right}
+
+% Anschließend diesen Befehl im Terminal nutzen
+% w: in Fenstern statt Vollbild öffnen
+% Switch-Screen, wenn Bildschirme zu vertauschen
+% pdfpc --switch-screens --notes=right Presentation.pdf
+
+
+% Einfügen von Notizen
+% Hierfür muss nach einem Frame das folgende eingefügt werden
+%\note[itemize]{
+%    \item point 1
+%    \item point 2
+%}
+
+% Dies ermöglicht es, eine stichpunktartige Notizenliste zu führen, die mit der vorhergehenden Folie zusammenhängt. Andere Notizsorten sind möglich, man möge hierfür die Dokumentation lesen
+
+% \hypersetup{pdfpagemode=FullScreen}
+% Dieser Befehl öffnet die Datei beim Öffnen direkt im Vollbildmodus
+
+
+\newcommand{\newLine}{%
+  \hfill\break
+}
+
+\tikzset{onslide/.code args={<#1>#2}{% from https://tex.stackexchange.com/a/6155/263192
+  \only<#1>{\pgfkeysalso{#2}}
+}}
+
+\usetikzlibrary{positioning}
+
+\pgfdeclarearrow{ %page 1020 of 3.0.1a manual
+name = mmany,
+parameters = { },
+setup code = { },
+drawing code = {
+    \newdimen\arrowsize%
+    \arrowsize=0.5pt%
+    \pgfsetdash{}{+0pt}%
+    \pgfsetmiterjoin%
+    \advance\arrowsize by .25\pgflinewidth%
+    \pgfpathmoveto{\pgfqpoint{0pt}{-9\arrowsize}}%
+    \pgfpathlineto{\pgfqpoint{-13\arrowsize}{0pt}}%
+    \pgfpathlineto{\pgfqpoint{0pt}{9\arrowsize}}%
+    \pgfpathmoveto{\pgfqpoint{-19\arrowsize}{-10\arrowsize}}% 
+    \pgfpathlineto{\pgfqpoint{-19\arrowsize}{10\arrowsize}}% 
+    \pgfusepathqstroke%
+    },
+defaults = { }
+}
+
+\pgfdeclarearrow{ %page 1020 of 3.0.1a manual
+name = omany,
+parameters = { },
+setup code = { },
+drawing code = {
+    \newdimen\arrowsize%
+    \arrowsize=0.5pt%
+    \pgfsetdash{}{+0pt}%
+    \pgfsetmiterjoin%
+    \advance\arrowsize by .25\pgflinewidth%
+    \pgfpathmoveto{\pgfqpoint{0pt}{-9\arrowsize}}%
+    \pgfpathlineto{\pgfqpoint{-13\arrowsize}{0pt}}%
+    \pgfpathlineto{\pgfqpoint{0pt}{9\arrowsize}}%
+    \pgfusepathqstroke%
+    \pgfsetfillcolor{white}
+    \pgfpathcircle{\pgfpoint{-19\arrowsize}{0}} {6\arrowsize}%
+    \pgfusepathqfillstroke%
+    },
+defaults = { }
+}
+
+\pgfdeclarearrow{ %page 1020 of 3.0.1a manual
+name = mone,
+parameters = { },
+setup code = { },
+drawing code = {
+    \newdimen\arrowsize%
+    \arrowsize=0.5pt%%
+    \pgfsetdash{}{+0pt}%
+    \pgfsetmiterjoin%
+    \advance\arrowsize by .25\pgflinewidth%
+    \pgfpathmoveto{\pgfqpoint{-9\arrowsize}{-10\arrowsize}}% 
+    \pgfpathlineto{\pgfqpoint{-9\arrowsize}{10\arrowsize}}% 
+    \pgfpathmoveto{\pgfqpoint{-19\arrowsize}{-10\arrowsize}}% 
+    \pgfpathlineto{\pgfqpoint{-19\arrowsize}{10\arrowsize}}%    
+    \pgfusepathqstroke%
+    },
+defaults = { }
+}
+
+\pgfdeclarearrow{ %page 1020 of 3.0.1a manual
+name = oone,
+parameters = { },
+setup code = { },
+drawing code = {
+    \newdimen\arrowsize%
+    \arrowsize=0.5pt%
+    \pgfsetdash{}{+0pt}%
+    \pgfsetmiterjoin%
+    \advance\arrowsize by .25\pgflinewidth
+    \pgfpathmoveto{\pgfqpoint{-9\arrowsize}{-10\arrowsize}}% 
+    \pgfpathlineto{\pgfqpoint{-9\arrowsize}{10\arrowsize}}% 
+    \pgfsetfillcolor{white}
+    \pgfpathcircle{\pgfpoint{-19\arrowsize}{0}} {6\arrowsize}%
+    \pgfusepathqfillstroke%
+    },
+defaults = { }
+}
+
+
+% Hier die Daten zur Präsentation eintragen
+\author[ls]{Lukas Schramm}
+\title[sgp]{Kræsjkurs INF115}
+\institute{Institutt for informatikk \\ Universitetet i Bergen}
+\date[25.05.22]{25 Mai 2022}
+
+% Dieses Dokument stellt nur die Präambel dar, alle Inhalte sind in die Datei Presentation.tex ausgelagert worden
+\begin{document}
+  \input{Presentation}
+\end{document}

@@ -1,0 +1,4 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{n}{commando1} \PYG{o}{=} \PYG{l+s+s2}{\PYGZdq{}SELECT * FROM Users WHERE name=lukas; DROP TABLE Users;\PYGZdq{}}
+\PYG{n}{execute\PYGZus{}query}\PYG{p}{(}\PYG{n}{database}\PYG{p}{,} \PYG{n}{commando1}\PYG{p}{)}
+\end{Verbatim}

@@ -1,0 +1,4 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{INSERT}\PYG{+w}{ }\PYG{k}{INTO}\PYG{+w}{ }\PYG{n}{film}\PYG{+w}{    }\PYG{c+c1}{\PYGZhy{}\PYGZhy{} kolonnenavn ikke nødvendig hvis alle blir brukt}
+\PYG{k}{VALUES}\PYG{+w}{ }\PYG{p}{(}\PYG{l+m+mi}{7}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}Fantômas\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}André Hunebelle\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+ss}{\PYGZdq{}Fransk tull\PYGZdq{}}\PYG{p}{);}
+\end{Verbatim}

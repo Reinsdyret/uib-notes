@@ -1,0 +1,6 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{SELECT}\PYG{+w}{ }\PYG{n}{Country}\PYG{p}{.}\PYG{n}{name}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{capital}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{inhabitants}
+\PYG{k}{FROM}\PYG{+w}{ }\PYG{n}{Country}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{City}
+\PYG{k}{WHERE}\PYG{+w}{ }\PYG{n}{Country}\PYG{p}{.}\PYG{n}{capital}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{City}\PYG{p}{.}\PYG{n}{id}
+\PYG{k}{AND}\PYG{+w}{ }\PYG{n}{inhabitants}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{l+m+mi}{500000}
+\end{Verbatim}
