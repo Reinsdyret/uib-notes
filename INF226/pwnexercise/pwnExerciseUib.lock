@@ -1,0 +1,9 @@
+#Ghidra Lock File
+#Thu Aug 24 15:05:28 CEST 2023
+OS\ Name=Linux
+OS\ Version=6.4.10-arch1-1
+Username=yral
+Hostname=laptop-yral-arch
+<META>\ Supports\ File\ Channel\ Locking=Channel Lock
+OS\ Architecture=amd64
+Timestamp=8/24/23, 3\:05 PM
