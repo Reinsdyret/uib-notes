@@ -24,7 +24,7 @@ for i in range (maxAdress,minAdress , -0x4):
         
         io.sendline() # Exits the while loop
        
-        output = str(io.readall(timeout=.5),"ascii")
+        output = str(io.readall(timeout=.5))
         print(output)
         if 'INF226{' in output:
             print(i)
