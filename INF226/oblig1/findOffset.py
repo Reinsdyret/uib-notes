@@ -9,6 +9,6 @@ for i in range(0, 1000):
     
     io.wait_for_close()
     if io.poll() != 0:
-        print(f"RIP (maybe) at offset {i}")
+        print(f"Canary (maybe) at offset {i}")
         sys.exit(0)
 
