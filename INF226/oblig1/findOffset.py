@@ -3,7 +3,8 @@ import sys
 import time
 
 for i in range(0, 1000):
-    io = process('./02')
+    #io = process('./02')
+    io = process(['setarch','-R', './03'])
     io.sendline(cyclic(i))
     io.sendline()
     
