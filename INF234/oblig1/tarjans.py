@@ -103,7 +103,7 @@ def dfs(G, current):
             dfs(G, neighbour)
             G.lows[current] = min(G.lows[current], G.lows[neighbour])
         elif G.onstack[neighbour]:
-            G.lows[current] = min(G.lows[current], G.lows[neighbour])
+            G.lows[current] = min(G.lows[current], G.ids[neighbour])
 
     if G.ids[current] == G.lows[current]:
         scc = []
