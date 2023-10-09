@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    #myButton {
+      position: absolute;
+    }
+  </style>
+</head>
+
+<body>
+  <button type="button" id="myButton">Movable</button>
+  <script>
+    let box = document.getElementById("myButton");
+    console.log(box);
+
+    let dd = dragndrop(box); // prime the 'dragndrop' coroutine
+
+    box.onmousedown = (event) => dd.next(event);
+    window.onmousemove = (event) => dd.next(event);
+    window.onmouseup = (event) => dd.next(event);
+
+    function* dragndrop(box) {
+      let theBox = box;
+      let mouseDown = false;
+      while (true) {
+        let evt = yield;
+        switch (evt.type) {
+          case 'mousedown':
+            mouseDown = true;
+            break;
+          case 'mouseup':
+            mouseDown = false;
+            break;
+          case 'mousemove':
+            if (mouseDown) move(theBox, evt);
+        }
+      }
+    }
+
+    function move(box, event) {
+      box.style.left = (event.pageX - box.parentNode.offsetLeft) + "px";
+      box.style.top = (event.pageY - box.parentNode.offsetTop) + "px";
+    }
+
+  </script>
+</body>
+
+</html>

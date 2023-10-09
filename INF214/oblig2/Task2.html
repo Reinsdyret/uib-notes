@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+  <h1>The Expression Simplifier!</h1>
+  <p>Welcome! <br />
+    To start simplyfying some expressions, input them into the input field, seperated with a semicolon (;).</p>
+
+  <form>
+    <input type="text" id="expressions" placeholder="Expressions here">
+    <input type="button" onclick="simplify()" value="Simplify">
+  </form>
+
+  <p id="output"></p>
+  <script>
+    // Define text fields
+    let textInput = document.getElementById('expressions');
+    let textOutput = document.getElementById('output');
+
+    // Flag for indicating when first promise is resolved
+    let firstResolved = false;
+    async function simplify() {
+      // Reset flag
+      firstResolved = false;
+
+      // Reset output field.
+      textOutput.innerHTML = "";
+
+      // Define expressions and base api string
+      let apiString = "https://newton.now.sh/api/v2/simplify/";
+      let expressions = textInput.value.split(';');
+
+      // Submit each expression to the rest api and output the result when promise is filled
+      // I use encodeURIComponent to let user input + signs and etc
+
+      // Solution to only show first resolved promise is to break whenever a promise returns
+      for (let i = 0; i < expressions.length; i++) {
+        fetch(apiString + encodeURIComponent(expressions[i]))
+          .then(result => resHandler(expressions[i], result));
+      }
+    }
+
+    async function resHandler(original, response) {
+      // Skip all if another promise has been resolved
+      if (firstResolved) return;
+      // Check if response is ok
+      if (response.ok) {
+        // If response is ok then parse as json and output to textbox
+        let resJSON = await response.json();
+        outputExpression(original, resJSON.result);
+        firstResolved = true;
+      } else {
+        // If response is not ok then output error
+        outputError(original, response);
+      }
+    }
+
+    function outputExpression(original, result) {
+      if (result.includes("Stop: syntax error")) {
+        // If expression has syntax error the result will include "Stop: syntax error"
+        // Output error if wrongfully written expression
+        textOutput.innerHTML += `<br> ${original} has some syntax error`;
+        return;
+      }
+
+      // Output result
+      textOutput.innerHTML += `<br> ${original}  ==  ${result}`;
+    }
+
+    function outputError(original, resJSON) {
+      // Output expression with error code
+      textOutput.innerHTML += `<br> Expression "${original}" failed with output status ${resJSON.status}`;
+    }
+  </script>
+</body>
+
+</html>

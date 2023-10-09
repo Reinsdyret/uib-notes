@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+  Task 3. The map iterable.
+  <script>
+    function *itmp(arr, func){
+      for (let elem of arr){
+        yield func(elem);
+      }
+    }
+
+    const p = itmp( [10, 20],  x => x * x );
+
+    console.log( p.next().value ); // 100
+    console.log( p.next().value ); // 400
+
+  </script>
+</body>
+
+</html>
