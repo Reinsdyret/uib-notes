@@ -32,7 +32,7 @@
       // This way we get the first promise that finishes and outputs it
       Promise.race(expressions.map(expression => fetch("https://newton.now.sh/api/v2/simplify/" + encodeURIComponent(expression))))
         .then((result) => {
-          let jsonResult = result.json()
+          result.json()
             .then((json) => {
               if (json.result.includes("Stop: syntax error")) textOutput.innerHTML = "Syntax error";
               else textOutput.innerHTML += json.result;
