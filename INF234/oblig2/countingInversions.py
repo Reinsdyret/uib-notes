@@ -17,7 +17,7 @@ def countInversions(arr):
         else:
             finalSorted.append(sortedB[j])
             j += 1
-            inversions += 1
+            inversions += (len(sortedA) - i)
 
     finalSorted.extend(sortedA[i:])
     finalSorted.extend(sortedB[j:])
@@ -25,6 +25,24 @@ def countInversions(arr):
     return inversions, finalSorted
 
 def count_inversions(A, B):
+    """
+    Given two lists A,B returns a tuple with (inversions, sorted) where inversions is the number of inversions needed for B to be equal to A, the sorted is the new list B after all inversions.
+
+    input: 
+        A (list): A list of comparable elements, this is the "ground truth" for list B
+        B (list): A list of comparable elements, this is the list that we count inversions on until it becomes A.
+
+    output:
+        (inversions, sorted):
+            inversions (int): The number of inversions needed to make B equal to A.
+            sorted (list):    The new sorted list B after all inversions are done.
+
+    Time complexity: 
+        T(n) = 2T(n/2) + O(n), based on the masters theorem this is O(n log n)
+
+    Preprocessing:
+        O(n): relabeling the items in B based on A
+    """
     # Create a mapping from elements in list A to their indices
     index_mapping = {val: i for i, val in enumerate(A)}
     # Relabel items in list B according to their indices in list A
