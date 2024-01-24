@@ -1,0 +1,14 @@
+Graphs!
+
+How to implement
+Edge list, an edge is a tuple of two vertices. NEVER USE THIS
+
+Adjancenry matrix
+Each coloumn is a vertex and each row is is a vertex. Each entry signifies an edge between the col vertex an row vertex. 1 or 0
+
+Adjancecy list
+A mapping of vertices to their neighbourhood. FASTEST WHEN LOOKING UP neighbourhood
+
+RECURSION ER TREIGERE ENN LOOPING, IKKE C++ MEN RUST
+
+Bruk dfs tree for å f.eks finne om grafen har cycles
