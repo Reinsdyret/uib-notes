@@ -71,7 +71,7 @@ fn main() {
 
 
     let leaves = find_leaves(&g_reversed);
-
+    let leaves2 = find_leaves(&g);
     match leaves.len() {
         // If there is no leaves then there is no end and there is cycle
         0 => println!("IMPOSSIBLE"),
@@ -80,6 +80,9 @@ fn main() {
         _ => println!("AMBIGUOUS"),
     }
 
+    //print_hashmap(&g);
+
+    
 }
 
 fn print_hashmap(map: &HashMap<char, Vec<char>>) {
@@ -113,7 +116,7 @@ fn find_path(tree: &HashMap<char, Vec<char>>, root: char, n: u32) -> String {
     }
 
     if (path.len() as u32) < n {
-        return "AMBIGUOUS".to_string(); // TODO: Impossible or AMBIGUOUS here? I have no clue :)
+        return "IMPOSSIBLE".to_string(); // TODO: Impossible or AMBIGUOUS here? I have no clue :)
     }
     return path;
 }
