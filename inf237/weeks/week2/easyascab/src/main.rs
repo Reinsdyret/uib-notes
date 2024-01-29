@@ -60,7 +60,7 @@ fn main() {
         new_line = "".to_string();
     }
 
-    //print_hashmap(&g);
+    print_hashmap(&g);
     //print_hashmap(&g_reversed);
 
 
