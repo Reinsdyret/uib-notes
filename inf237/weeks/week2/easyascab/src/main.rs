@@ -1,10 +1,11 @@
 use std::io;
+use std::io::BufRead;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::cmp;
 use std::process;
 
 fn main() {
-    let stdin = io::stdin();
+    let mut stdin = io::stdin().lock();
 
     let mut line = String::new();
 
@@ -41,12 +42,15 @@ fn main() {
 
         // Loop for i: 0 to min(prev_line.len(), new_line.len())
         // Check if prev_line[i] == new_line[i]. If not then create edge prev_line[i] -> new_line[i]
+        let mut is_prefix = true;
         for i in 0..cmp::min(prev_line.len(), new_line.len()) {
             let char1 = prev_line.as_bytes()[i];
             let char2 = new_line.as_bytes()[i];
             if char1 == char2 {
                 continue;
             }
+
+            is_prefix = false;
 
             //println!("{} won against {}", char1 as char, char2 as char);
 
@@ -56,15 +60,17 @@ fn main() {
             break;
         }
 
+        if is_prefix && prev_line.len() > new_line.len(){
+            println!("IMPOSSIBLE");
+            process::exit(0);
+        }
+
         prev_line = new_line.clone();
         new_line = "".to_string();
     }
 
-    print_hashmap(&g);
+    //print_hashmap(&g);
     //print_hashmap(&g_reversed);
-
-
-
 
     // Output:
     // If the graph has a cycle then output "IMPOSSIBLE"
@@ -75,14 +81,52 @@ fn main() {
     match leaves.len() {
         // If there is no leaves then there is no end and there is cycle
         0 => println!("IMPOSSIBLE"),
-        1 => println!("{}", find_path(&g, leaves[0], n)),
-        // If the graph has multiple leaves, it does not have a clear order
-        _ => println!("AMBIGUOUS"),
+        1 => println!("{}", find_path(&g, leaves[0], g.capacity() as u32 )),
+        // If the graph has multiple leaves, it does not have a clear order but it can still have a
+        // cycle
+        _ => println!("{}", check_cycle(&g, leaves, g.capacity() as u32)),
     }
 
     //print_hashmap(&g);
 
     
+}
+
+fn check_cycle(graph: &HashMap<char, Vec<char>>, roots: Vec<char>, n: u32) -> String{
+
+    let mut node_stack: Vec<char> = Vec::from(roots);
+    let mut visited: HashSet<char> = HashSet::new();
+
+    while let Some(node) = node_stack.pop() {
+        if visited.contains(&node) {
+            return "IMPOSSIBLE".to_string();
+        }
+
+        node_stack.extend_from_slice(graph.get(&node).unwrap());
+        visited.insert(node);
+    }
+
+    return "AMBIGUOUS".to_string();
+
+    for root in roots {
+        let mut neighbours: Vec<char> = graph.get(&root).expect("No neighbours").clone();
+        let mut count: u32 = 0;
+
+        while neighbours.len() > 0 {
+            count += 1;
+            let neighbour = &neighbours[0];
+
+            if count > n {
+                return "IMPOSSIBLE".to_string();
+            }
+
+            if neighbours.is_empty() {
+                neighbours = graph.get(neighbour).expect("no neighbours of neighbour").clone();
+            }
+        }
+    }
+
+    return "AMBIGUOUS".to_string();
 }
 
 fn print_hashmap(map: &HashMap<char, Vec<char>>) {
@@ -104,6 +148,9 @@ fn find_leaves(tree: &HashMap<char, Vec<char>>) -> Vec<char> {
 }
 
 fn find_path(tree: &HashMap<char, Vec<char>>, root: char, n: u32) -> String {
+    if check_cycle(&tree, vec![root], n) == "IMPOSSIBLE".to_string() {
+        return "IMPOSSIBLE".to_string();
+    }
     let mut neighbours: Vec<char> = tree.get(&root).expect("no neighbours").clone();
 
     let mut path = String::new();
@@ -113,10 +160,14 @@ fn find_path(tree: &HashMap<char, Vec<char>>, root: char, n: u32) -> String {
         let neighbour = &neighbours[0];
         path.push(*neighbour);
         neighbours = tree.get(neighbour).expect("no neighbours of neighbour").clone();
+
+        if (path.len() as u32) > n{
+            return "IMPOSSIBLE".to_string();
+        }
     }
 
-    if (path.len() as u32) < n {
-        return "IMPOSSIBLE".to_string(); // TODO: Impossible or AMBIGUOUS here? I have no clue :)
-    }
+    //if (path.len() as u32) < n {
+    //    return "AMBIGUOUS".to_string(); // TODO: Impossible or AMBIGUOUS here? I have no clue :)
+    //}
     return path;
 }

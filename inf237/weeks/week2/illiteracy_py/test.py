@@ -28,6 +28,8 @@ def c(word, index):
     return rotate_at(word, 7 - index)
 
 def d(word, index):
+    if index == 0 or index == 7:
+        return word
     if index < 4:
         for i in range(0,index):
             word = rotate_at(word, i)
@@ -69,8 +71,8 @@ def click(word, index):
         return f(word, index)
 
 
-
-to_visit = []
+from collections import deque
+to_visit = deque([])
 visited = set()
 next_lvl = []
 steps = 0
@@ -79,31 +81,31 @@ complete = False
 to_visit.append(input().strip())
 end = input().strip()
 
+n = 0
+m = 0
+
 while len(to_visit) > 0 and not complete:
     while len(to_visit) > 0 and not complete:
-        state = to_visit.pop(0)
+        n += 1
+        state = to_visit.popleft()
 
         if state == end:
             complete = True
             break
 
-        #if state in visited: # WHY DOES THIS BREAK IT
-        #    break
 
-        visited.add(state)
 
         for i in range(0, 8):
             next_state = click(state, i)
-            if next_state not in visited:
+            if next_state not in visited and next_state != state:
+                visited.add(next_state)
                 next_lvl.append(next_state)
+                m += 1
 
     to_visit.extend(next_lvl)
     next_lvl = []
 
     if not complete:
         steps += 1 
-        print(steps)
-
-
 
 print(steps)

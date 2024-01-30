@@ -26,13 +26,7 @@ fn main() {
 
     while !to_visit.is_empty() && !complete {
 
-        while !to_visit.is_empty() {
-
-            let state = to_visit.pop().unwrap();
-
-            if visited.contains(&state) {
-                continue;
-            }
+        while let Some(state) = to_visit.pop() {
 
             if state == end_state {
                 complete = true;
@@ -40,14 +34,14 @@ fn main() {
             }
 
             let cloned_state = state.clone();
-            visited.insert(state);
 
             // then generate all possible states from that states.
             for i in 0..8 {
                 let next_state = click(cloned_state.clone(), i);
 
                 if !visited.contains(&next_state) && !to_visit.contains(&next_state) {
-                    next_level.push(next_state.clone());
+                    visited.insert(next_state.clone());
+                    next_level.push(next_state);
                 } 
 
                 //if visited.contains(&next_state) {
