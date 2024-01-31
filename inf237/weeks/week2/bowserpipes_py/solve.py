@@ -1,6 +1,6 @@
 import functools
 
-@functools.cache
+@functools.lru_cache(None)
 def find_coin_room(v):
     global vertices
     global visited
@@ -26,28 +26,31 @@ for i in range(len(vertices)):
 
 pipes = []
 for i in range(len(vertices)):
-    if i not in not_pipes and i not in luigi_coins:
+    if i not in not_pipes:
         pipes.append(i)
 
 best_distance_coins = {}
-luigi_room_order = []
-visited = set()
-for x in range(len(luigi_coins)):
-    room, steps = find_coin_room(luigi_coins[x])
-    best_distance_coins[room] = (luigi_coins[x], steps)
-    luigi_room_order.append(room)
-
-# Explore remaizning pipes:
+# Explore all pipes:
 for pipe in pipes:
     visited = set()
     room, steps = find_coin_room(pipe)
     if steps == -1:
+        # Loop
         continue
     if room not in best_distance_coins:
+        best_distance_coins[room] = (pipe, steps)
         continue
     saved_pipe, saved_steps = best_distance_coins[room]
     if steps < saved_steps or (steps == saved_steps and pipe < saved_pipe):
         best_distance_coins[room] = (pipe, steps)
+
+# explore luigi pipes
+luigi_room_order = []
+visited = set()
+for x in range(len(luigi_coins)):
+    room, steps = find_coin_room(luigi_coins[x])
+    luigi_room_order.append(room)
+
 
 # Output
 for room in luigi_room_order:
