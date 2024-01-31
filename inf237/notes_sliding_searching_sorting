@@ -1,0 +1,3 @@
+SLIDING
+Sliding window -> looking at a window (some values) and then slide the window further on the input
+Instead of computing the window every time we can care about the difference from window_i and window_i+1:
