@@ -6,6 +6,11 @@ fn main() {
 
     let [n]: [i32;1] = get_i32s().try_into().expect("Expected 1 int");
 
+    if n == 1 {
+        println!("0");
+        process::exit(0);
+    }
+
     let mut largest: usize = 0;
     let mut smallest: usize = 0;
     let mut numbers: Vec<(i32, i32)> = Vec::new();
