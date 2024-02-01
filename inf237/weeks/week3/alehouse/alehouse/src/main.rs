@@ -6,7 +6,9 @@ fn main() {
 
     let [n, k]: [i32; 2]= get_n_i32(2).try_into().expect("Couldnt parse vec to arr");
 
-    let mut intervals: Vec<(i32, i32)> = Vec::new();
+    // A list on intervals where bool signifies whether the number is start or stop time
+    // Start time is True and Stop False
+    let mut intervals: Vec<(i32, bool)> = Vec::new();
 
     let mut max_time = 0;
 
@@ -15,37 +17,26 @@ fn main() {
         if b > max_time {
             max_time = b;
         }
-        intervals.push((a,b));
+        intervals.push((a,true));
+        // Increase stop time by k to just care about staying in the bar for 0 seconds.
+        intervals.push(((b + k), false));
     }
 
-    let mut max_intervals_in_window = 0;
+    intervals.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| b.1.cmp(&a.1)));
 
-    for window_start in 0..max_time + 1 {
-        if k == 0 {
-            // max_intervals_in_window = zero_window(&intervals); DOES NOT MAKE SENSE TO CARE ABOUT
-            break;
-        }
-        let n = intervals_in_window(&intervals, (&window_start, cmp::min(&(window_start + k), &max_time)));
-        //println!("Got {} intervals for window {} {}", n, window_start, window_start + k);
-        if n > max_intervals_in_window {
-            max_intervals_in_window = n;
-        }
-    }
+    let mut max_counter = 0;
+    let mut counter = 0;
 
-    println!("{}", max_intervals_in_window);
-}
-
-
-fn zero_window(intervals: &Vec<(i32,i32)>) -> i32 {
-    let mut counter:i32 = 0;
-
-    for (start, stop) in intervals {
-        if start <= &0 || stop <= &0 {
+    for (time, start) in intervals {
+        if start {
             counter += 1;
+            max_counter = cmp::max(max_counter, counter);
+        } else {
+            counter -= 1;
         }
     }
 
-    return counter;
+    println!("{}", max_counter)
 }
 
 fn get_n_i32(n: i32) -> Vec<i32> {
@@ -53,19 +44,4 @@ fn get_n_i32(n: i32) -> Vec<i32> {
     let _ = io::stdin().read_line(&mut line);
 
     return line.trim().split(' ').map(|c| c.parse().unwrap()).collect::<Vec<i32>>();
-}
-
-fn intervals_in_window(intervals: &Vec<(i32,i32)>, window:(&i32,&i32)) -> i32 {
-
-    let mut counter:i32 = 0;
-    
-    for (start, stop) in intervals {
-        //println!("Start, stop: {} {} Window.0, window.1: {} {}",start, stop, window.0, window.1);
-        if (start <= window.0 && stop >= window.0)|| (start <= window.1 && stop >= window.1) {
-            //println!("Interval: {} {} Overlaps with window: {} {}", start, stop, window.0, window.1);
-            counter += 1;
-        }
-    }
-
-    return counter;
 }
