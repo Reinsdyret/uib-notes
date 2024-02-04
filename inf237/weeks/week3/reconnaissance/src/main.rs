@@ -14,59 +14,15 @@ fn main() {
 
     let mut numbers: Vec<(f64, f64)> = Vec::new();
 
-    // Get one input first so we can compare largest and smallest
-    let [x, v]: [f64; 2] = get_f64s().try_into().expect("Expected two ints");
-    numbers.push((x, v));
-
-    for i in 1..n as i64 {
+    for _ in 0..n as i64 {
         let [x, v]: [f64; 2] = get_f64s().try_into().expect("Expected two ints");
         numbers.push((x, v));
     }
 
-    let x = gss(fp, 0.0, 1000.0, 0.0001, f64::sqrt(5.0) + 1.0 / 2.0, &numbers);
+    // TODO: I cant increase the right limit more than 1000 before the first test stops :(
+    let t = ternary_search(diff, 0.0, 1000.0, 0.0001, &numbers.clone());
 
-    println!("{}", fp(x, &numbers));
-}
-
-fn f(t: f64, values: &Vec<(f64,f64)>) -> f64{
-    let mut largest: f64;
-    let mut smallest: f64;
-
-    let mut values_copy = values.clone();
-
-    for i in 0..values.len() {
-        values_copy[i].0 += values_copy[i].1 * t;
-    }
-
-    largest =  0.0;
-    smallest = 0.0;
-    
-
-    for (pos, _) in values_copy {
-        largest = if pos > largest {pos} else {largest};
-        smallest = if pos < smallest {pos} else {smallest};
-        println!("{} {}", largest, smallest);
-    }
-
-    println!("{} {}", largest, smallest);
-
-    return diff(&largest, &smallest);
-}
-
-fn fp(t: f64, values: &Vec<(f64, f64)>) -> f64 {
-    let mut min_distance = f64::INFINITY;
-
-    for i in 0..values.len() {
-        for j in (i + 1)..values.len() {
-            let pos_i = values[i].0 + values[i].1 * t;
-            let pos_j = values[j].0 + values[j].1 * t;
-
-            let distance = (pos_i - pos_j).abs();
-            min_distance = min_distance.min(distance);
-        }
-    }
-
-    return min_distance;
+    println!("{}", diff(t, &numbers));
 }
 
 fn get_f64s () -> Vec<f64> {
@@ -76,32 +32,39 @@ fn get_f64s () -> Vec<f64> {
     return line.trim().split(' ').map(|c| c.parse().unwrap()).collect::<Vec<_>>();
 }
 
-fn diff(a: &f64, b: &f64) -> f64 {
-    if (a >= &0.0 && b >= &0.0) || (a <= &0.0 && b <= &0.0) {
-        return f64::max(a.abs(), b.abs()) - f64::min(a.abs(), b.abs());
-    } else {
-        return a.abs() + b.abs();
+fn diff(t: f64, values: &Vec<(f64,f64)>) -> f64 {
+    let mut right: f64 = 0.0;
+    let mut left: f64 = 0.0;
+
+    for (pos, v) in values {
+        let new_pos = pos + v * t;
+        if new_pos >= right {
+            right = new_pos;
+        } else if new_pos <= left {
+            left = new_pos;
+        }
     }
+
+    return right - left;
 }
 
-fn gss(f: fn (f64, &Vec<(f64,f64)>) -> f64, mut a: f64, mut b: f64, tolerance: f64, gr: f64, values: &Vec<(f64, f64)>) -> f64{
-    // Golden section search. Used pseudocode from https://en.wikipedia.org/wiki/Golden-section_search# 
+fn ternary_search(f: fn (f64, &Vec<(f64,f64)>) -> f64, mut left: f64, mut right: f64, tolerance: f64, values: &Vec<(f64, f64)>) -> f64{
+    // Ternary search. Used pseudocode from https://en.wikipedia.org/wiki/Ternary_search
 
-    let mut c: f64;
-    let mut d: f64;
-    while f64::abs(b - a) > tolerance {
-        c = b - (b - a) / gr;
-        d = a + (b - a) / gr;
+    let mut left_third: f64;
+    let mut right_third: f64;
 
-        if f(c, &values) < f(d, &values) {
-            b = d;
+    while f64::abs(right - left) > tolerance {
+        
+        left_third = left + (right - left) / 3.0;
+        right_third = right - (right - left) / 3.0;
+
+        if f(left_third, &values) < f(right_third, &values) {
+            right = left_third;
         } else {
-            a = c;
+            left = right_third;
         }
-        println!("a: {}, b: {}", a, b);
     }
 
-    println!("({} + {}) / 2 = {}", a, b, (a + b) / 2.0);
-    return ((b + a) / 2.0); 
-
+    return right; 
 }

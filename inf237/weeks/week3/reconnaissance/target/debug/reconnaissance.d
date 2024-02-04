@@ -1,1 +1,1 @@
-/home/yral/uib-notes/inf237/weeks/week3/reconnaissance/target/debug/reconnaissance: /home/yral/uib-notes/inf237/weeks/week3/reconnaissance/src/main.rs
+/home/yral/UiB/uib-notes/inf237/weeks/week3/reconnaissance/target/debug/reconnaissance: /home/yral/UiB/uib-notes/inf237/weeks/week3/reconnaissance/src/main.rs
