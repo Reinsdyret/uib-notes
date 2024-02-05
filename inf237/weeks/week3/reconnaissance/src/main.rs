@@ -20,7 +20,7 @@ fn main() {
     }
 
     // TODO: I cant increase the right limit more than 1000 before the first test stops :(
-    let t = ternary_search(diff, 0.0, 1000.0, 0.0001, &numbers.clone());
+    let t = ternary_search(diff, 0.0, 10000.0, 0.0001, &numbers.clone());
 
     println!("{}", diff(t, &numbers));
 }
@@ -33,19 +33,20 @@ fn get_f64s () -> Vec<f64> {
 }
 
 fn diff(t: f64, values: &Vec<(f64,f64)>) -> f64 {
-    let mut right: f64 = 0.0;
-    let mut left: f64 = 0.0;
+    let mut right: f64 = -100000.0;
+    let mut left: f64 = 100000.0;
 
     for (pos, v) in values {
         let new_pos = pos + v * t;
-        if new_pos >= right {
+        if new_pos > right {
             right = new_pos;
-        } else if new_pos <= left {
+        }
+        if new_pos < left {
             left = new_pos;
         }
     }
 
-    return right - left;
+    return f64::abs(right - left);
 }
 
 fn ternary_search(f: fn (f64, &Vec<(f64,f64)>) -> f64, mut left: f64, mut right: f64, tolerance: f64, values: &Vec<(f64, f64)>) -> f64{
@@ -60,9 +61,9 @@ fn ternary_search(f: fn (f64, &Vec<(f64,f64)>) -> f64, mut left: f64, mut right:
         right_third = right - (right - left) / 3.0;
 
         if f(left_third, &values) < f(right_third, &values) {
-            right = left_third;
+            right = right_third;
         } else {
-            left = right_third;
+            left = left_third;
         }
     }
 
