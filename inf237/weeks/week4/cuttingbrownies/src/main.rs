@@ -1,4 +1,4 @@
-use std::{io::{self, stdin, Read}, path::Iter};
+use std::io;
 
 fn main() {
     let stdin = io::stdin();
@@ -8,8 +8,6 @@ fn main() {
 
     let n: i32 = line.trim().parse().expect("Expected int on first line");
 
-    let mut brownies: Vec<(i32, i32, &str)> = Vec::new();
-
     for _ in 0..n {
         //line = String::new();
         //let _ = stdin.read_line(&mut line);
@@ -18,7 +16,23 @@ fn main() {
         let width: i32 = items[0].parse().expect("Expected int");
         let height: i32 = items[1].parse().expect("Expected int");
         let person: &str = items[2];
-        brownies.push((width, height, &person));
+
+        let log2_width:u32 = i32::ilog2(width);
+        let log2_height:u32 = i32::ilog2(height);
+
+        if person == "Vicky" {
+            if log2_width > log2_height {
+                println!("Vicky can win");
+            } else {
+                println!("Vicky cannot win");
+            }
+        } else {
+            if log2_height > log2_width {
+                println!("Harry can win");
+            } else {
+                println!("Harry cannot win")
+            }
+        }
     }
 }
 
@@ -27,12 +41,4 @@ fn get_line() -> String {
     let _ = io::stdin().read_line(&mut line);
 
     return line.trim().to_string();
-}
-
-fn C(brownie: &(i32, i32, &str)) -> i32 {
-    if brownie.2 == "Harry" {
-        brownie.1
-    } else {
-        brownie.0
-    }
 }
