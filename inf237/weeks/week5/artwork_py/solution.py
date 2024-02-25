@@ -11,6 +11,7 @@ class UndirectedGraph:
         self.vertices = vertices
         #self.edges = edges
         self.edges = []
+        self.blacked = set()
         
         for v in vertices:
             # Adding all edges to all nodes
@@ -33,11 +34,10 @@ class UndirectedGraph:
 
     def remove_edges_to(self, v):
         """ Removes edge to v """
-        for x in self.vertices:
-            if (x,v) in self.edges:
-                self.edges.remove((x,v))
-            if (v,x) in self.edges:
-                self.edges.remove((v,x))
+        for u in self.vertices:
+            self.graph[u][v] = False
+            self.graph[v][u] = False
+        self.blacked.add(v)
 
     def neighbours(self,u):
         n = []
@@ -48,29 +48,27 @@ class UndirectedGraph:
         return n
 
     def connected_components(self):
-        # Inspired and taken from https://www.geeksforgeeks.org/connected-components-in-an-undirected-graph/
-        parent = {x: x for x in vertices}
+        visited = {}
         
-        for (u, v) in self.edges:
-            parent[self.merge(parent, u)] = self.merge(parent, v)
-            
+        for v in vertices:
+            visited[v] = False
+
         number_of_connected = 0
         
         for v in vertices:
-            if parent[v] == v:
+            if not visited[v] and v not in self.blacked:
+                self.dfs(visited, v)
                 number_of_connected += 1
-        
         
         return number_of_connected
 
         
-    def merge(self, parent, x):
-        # Inspired and taken from https://www.geeksforgeeks.org/connected-components-in-an-undirected-graph/
-        if parent[x] == x:
-            return x
-        else:
-            # Path compression
-            return self.merge(parent, parent[x])
+    def dfs(self, visited, src):
+        visited[src] = True
+
+        for n in self.neighbours(src):
+            if not visited[n] and n not in self.blacked:
+                self.dfs(visited, n)
 
         
 
@@ -86,7 +84,15 @@ for _ in range(q):
     
     for x in range(x1, x2 + 1):
         for y in range(y1, y2 + 1):
-            G.remove_edges_to((x, y))
+            G.remove_edges_to((x - 1, y - 1))
     
     print(G.connected_components())
 
+#for v in G.neighbours((1,1)):
+#    print(f"(1,1) to {v} = {G.graph[(1,1)][v]}")
+
+#G.remove_edges_to((1,1))
+#print("Removed edges")
+
+#for v in G.neighbours((1,1)):
+#    print(f"(1,1) to {v} = {G.graph[(1,1)][v]}")
