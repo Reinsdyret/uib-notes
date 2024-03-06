@@ -24,6 +24,7 @@ def query_(t, l, r):
             yield t[left(pr)]
         l = pl
         r = pr
+
 def query(t, l, r, op=sum):
     return op(query_(t, l, r))
 
@@ -65,3 +66,5 @@ for _ in range(k):
         l, r = (stuff[1], stuff[2])
         print(q(tree, int(l) - 1, int(r) - 1))
 
+n, q = map(int, input().split())
+values = list(map(int, input().split()))
