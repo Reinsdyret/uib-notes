@@ -42,31 +42,27 @@ def next_configurations(board):
 def is_finish_conf(board, goal):
     return board == goal
 
-def bfs_board_min_depth(board, goal):
-    queue = deque([(board, 0)])
-    visited = set([board])
+def bfs_board_min_depth(goal):
+    queue = deque([(goal, 0)])
+    visited = {goal: 0}
 
     while queue:
         curr_board, depth = queue.popleft()
         
-        if is_finish_conf(curr_board, goal):
-            return depth
-
-        if depth == 10:
-            return -1
+        if visited[curr_board] == 10:
+            return visited
     
         for next_board in next_configurations(curr_board):
-            next_hash = next_board
-            if next_hash not in visited:
-                visited.add(next_hash)
+            if next_board not in visited:
+                visited[next_board] = depth + 1
                 queue.append((next_board, depth + 1))
 
-    return -1
+    return visited
 
 
 n = int(sys.stdin.readline().strip())
-if n <= 0:
-    print('tee' + 76 * 7)
+goal = "111110111100 110000100000"
+boards = bfs_board_min_depth(goal)
 for case in range(n):
     b = []
     for row in range(5):
@@ -76,14 +72,9 @@ for case in range(n):
         b.append(a)
     
     board = ''.join(b)
-    if len(board) != 25:
-        print('poo' + 76 * 7)
-        #print(len(board))
-
-    goal = "111110111100 110000100000"
-    
-    res = bfs_board_min_depth(goal, board)
-    if res == -1:
-        sys.stdout.write("Unsolvable in less than 11 move(s).\n")
+    if board in boards:
+        print(f"Solvable in {boards[board]} move(s).")
     else:
-        sys.stdout.write(f"Solvable in {res} move(s).\n")
+        print("Unsolvable in less than 11 move(s).")
+    
+    
