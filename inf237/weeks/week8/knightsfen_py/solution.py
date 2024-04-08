@@ -60,21 +60,27 @@ def bfs_board_min_depth(goal):
     return visited
 
 
-n = int(sys.stdin.readline().strip())
+#n = int(sys.stdin.readline().strip())
 goal = "111110111100 110000100000"
 boards = bfs_board_min_depth(goal)
+#print(boards)
+with open('new1.py', 'w') as f:
+    
+    f.write(f"""
+n = int(input())
+boards = {str(boards)}
 for case in range(n):
     b = []
     for row in range(5):
-        a = sys.stdin.readline().strip()
+        a = input().strip()
         if len(a) != 5:
             a += ' '
         b.append(a)
     
     board = ''.join(b)
     if board in boards:
-        print(f"Solvable in {boards[board]} move(s).")
+        print(f"Solvable in boards[board] move(s).")
     else:
         print("Unsolvable in less than 11 move(s).")
-    
+    """)
     
