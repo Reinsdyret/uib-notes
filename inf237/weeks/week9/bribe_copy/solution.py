@@ -4,9 +4,10 @@ def percentage_complete(henchmen, need_to_bribe, money, memo):
     if len(henchmen) == 0 or money == 0:
         return 0
     
+    tuple_hench = tuple(henchmen)
     # Check if the result for the current state is already memoized
-    if (tuple(henchmen), need_to_bribe, money) in memo:
-        return memo[(tuple(henchmen), need_to_bribe, money)]
+    if (tuple_hench, need_to_bribe, money) in memo:
+        return memo[(tuple_hench, need_to_bribe, money)]
     
     best_prob = 0
     for cost, percentage in henchmen:
@@ -16,7 +17,7 @@ def percentage_complete(henchmen, need_to_bribe, money, memo):
             best_prob = max(best_prob, prob_success + prob_failure)
     
     # Store the best probability found for the current state in the memoization table
-    memo[(tuple(henchmen), need_to_bribe, money)] = best_prob
+    memo[(tuple_hench, need_to_bribe, money)] = best_prob
     
     return best_prob
 

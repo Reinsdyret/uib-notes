@@ -1,59 +1,61 @@
-
-use std::{collections::{HashMap, HashSet}, io};
-
+use std::collections::HashMap;
+use std::io::{self, BufRead};
 
 fn main() {
-    let (stdin, stdout) = (io::stdin(), io::stdout());
-    
-    let mut line = String::new();
-    stdin.read_line(&mut line);
+    let stdin = io::stdin();
+    let mut lines = stdin.lock().lines();
 
-    let cases: usize = line.trim().parse().unwrap();
+    let cases: usize = lines.next().unwrap().unwrap().trim().parse().unwrap();
 
-    for case in 0..cases {
-        line.clear();
-
-        stdin.read_line(&mut line);
+    for _ in 0..cases {
+        let line = lines.next().unwrap().unwrap();
         let items: Vec<usize> = line.trim().split_whitespace().map(|a| a.parse().unwrap()).collect();
         let (number_henchmen, need_to_bribe, money) = (items[0], items[1], items[2]);
 
-        let mut henchmen: HashSet<(usize, usize)> = HashSet::new();
+        let mut henchmen: Vec<(usize, usize)> = Vec::new();
         for _ in 0..number_henchmen {
-            line.clear();
-            stdin.read_line(&mut line);
-
+            let line = lines.next().unwrap().unwrap();
             let i: Vec<usize> = line.trim().split_whitespace().map(|a| a.parse().unwrap()).collect();
             let (cost, percentage) = (i[0], i[1]);
-            henchmen.insert((cost, percentage));
+            henchmen.push((cost, percentage));
         }
-        let mut memo: HashMap<(String, usize, usize), f32> = HashMap::new();
-        println!("{}", percentage_complete(&mut henchmen, need_to_bribe, money, &mut memo));
+
+        let mut memo: HashMap<(u16, usize, usize), f64> = HashMap::new();
+        let result = percentage_complete(&henchmen, 0, need_to_bribe, money, &mut memo);
+        println!("{}", result);
     }
 }
 
-fn percentage_complete(henchmen: &mut HashSet<(usize, usize)>, need_to_bribe: usize, money: usize, memo: &mut HashMap<(&mut HashSet<(usize, usize)>, usize, usize), f32>) -> f32 {
-    if need_to_bribe == 0 {return 1.0}
-
-    if henchmen.len() == 0 || money == 0 {return 0.0}
-
-    if (memo.contains_key(&(henchmen, need_to_bribe, money))) {
-        return memo[&(henchmen, need_to_bribe, money)]
+fn percentage_complete(henchmen: &[(usize, usize)], used_mask: u16, need_to_bribe: usize, money: usize, memo: &mut HashMap<(u16, usize, usize), f64>) -> f64 {
+    if need_to_bribe == 0 {
+        return 1.0;
+    }
+    if money == 0 {
+        return 0.0;
     }
 
-    let mut new_prob: f32 = 0.0;
+    let key = (used_mask, need_to_bribe, money);
+    if let Some(&prob) = memo.get(&key) {
+        return prob;
+    }
+    
+    //if used_mask.count_ones() as usize > need_to_bribe {
+    //    memo.insert(key, 0.0);
+    //    return 0.0;
+    //}
 
-    for (cost, probability) in henchmen.iter() {
-        if cost <= &money {
-            let mut hench_clone = henchmen.clone();
-            hench_clone.remove(&(cost.to_owned(), probability.to_owned()));
-            let prob_success: f32 = percentage_complete(&mut hench_clone, need_to_bribe - 1, money - cost, memo) * (*probability as f32);
-            let prob_fail: f32 = percentage_complete(&mut hench_clone, need_to_bribe, money - cost, memo) * (1.0 - *probability as f32);
+    let mut new_prob: f64= 0.0;
+    for (i, (cost, percentage)) in henchmen.iter().enumerate() {
+        let mask = 1 << i;
+        if used_mask & mask == 0 && *cost <= money {
+            let probability :f64= (*percentage as f64) / 100.0;
+            let prob_success = percentage_complete(henchmen, used_mask | mask, need_to_bribe - 1, money - cost, memo) * probability;
+            let prob_fail = percentage_complete(henchmen, used_mask | mask, need_to_bribe, money - cost, memo) * (1.0 - probability);
 
             new_prob = new_prob.max(prob_success + prob_fail);
         }
     }
 
-    memo.insert((stringify!(henchmen).to_owned(), need_to_bribe, money), new_prob);
-
-    return new_prob;
+    memo.insert(key, new_prob);
+    new_prob
 }
