@@ -1,0 +1,7 @@
+[package]
+name = "hawkHaulTuah"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+file_reader = { path = "./src/file_reader" }

@@ -1,0 +1,221 @@
+use std::env;
+use std::io::BufReader;
+use std::io::prelude::*;
+use std::fs::File;
+use std::collections::HashMap;
+
+#[derive(Debug)]
+pub struct Vehicle {
+    index: u32,
+    home_node: u32,
+    start_time: u32,
+    capacity: u32,
+}
+
+#[derive(Debug)]
+pub struct Call {
+    index: u32,
+    origin: u32,
+    destination: u32,
+    size: u32,
+    cost_outsource: u32,
+    pickup_start: u32,
+    pickup_end: u32,
+    delivery_start: u32,
+    delivery_end: u32
+}
+
+#[derive(Debug)]
+pub struct Travel {
+    vehicle_index: u32,
+    origin: u32,
+    destination: u32,
+    time: u32,
+    cost: u32
+}
+
+#[derive(Debug)]
+pub struct Loading {
+    vehicle_index: u32,
+    call_index: u32,
+    origin_time: u32,
+    origin_cost: u32,
+    destination_time: u32,
+    destination_cost: u32
+}
+
+#[derive(Debug)]
+pub struct Instance {
+    num_nodes: u32,
+    num_vehicles: u32,
+    num_calls: u32,
+    vehicles: Vec<Vehicle>,
+    compatibility: HashMap<u32, Vec<u32>>,
+    calls: Vec<Call>,
+    travels: Vec<Travel>,
+    loadings: Vec<Loading>
+}
+
+
+pub fn read_file(file_path: &str) -> Instance {
+    println!("In file {file_path}");
+    let file = File::open(file_path).expect("Unable to open file");
+    let mut reader = BufReader::new(file);
+
+    let mut vehicles: Vec<Vehicle> = Vec::new();
+    let mut compatibility: HashMap<u32, Vec<u32>> = HashMap::new();
+    let mut calls: Vec<Call> = Vec::new();
+    let mut travels: Vec<Travel> = Vec::new();
+    let mut loadings: Vec<Loading> = Vec::new();
+
+    let mut line= String::new();
+
+    // Read number of nodes 
+    reader.read_line(&mut line).expect("Couldnt read line");
+
+    line = String::new();
+    reader.read_line(&mut line).expect("Couldnt read line");
+    
+    let NUM_NODES: u32 = line.trim().parse::<u32>().unwrap();
+    //println!("NUM NODES: {NUM_NODES}");
+
+
+    reader.read_line(&mut line).expect("Couldnt read line");
+    
+    // Read number of vehicles
+    line = String::new();
+    reader.read_line(&mut line).expect("Couldnt read line");
+
+    let NUM_VEHICLES = line.trim().parse::<u32>().unwrap();
+    //println!("NUM VEHICLES: {NUM_VEHICLES}");
+
+    reader.read_line(&mut line).expect("Couldnt read line");
+
+    // Read and store vehicles
+    for i in 0..NUM_VEHICLES {
+        line = String::new();
+        reader.read_line(&mut line).expect("Couldnt read line");
+
+        let vals: Vec<u32> = line.trim().split(',').map(|x|->u32{x.parse().unwrap()}).collect();
+        let vehicle = Vehicle {
+            index: vals[0],
+            home_node: vals[1],
+            start_time: vals[2],
+            capacity: vals[3],
+        };
+
+        vehicles.push(vehicle);
+    }
+    //println!("{vehicles:?}");
+
+    // Read number of calls
+    reader.read_line(&mut line).expect("Couldnt read line");
+
+    line = String::new();
+    reader.read_line(&mut line).expect("Couldnt read line");
+
+    let NUM_CALLS = line.trim().parse::<u32>().unwrap();
+
+    //println!("{NUM_CALLS}");
+
+    reader.read_line(&mut line).expect("Couldnt read line");
+    
+    for i in 0..NUM_VEHICLES {
+        line = String::new();
+        reader.read_line(&mut line).expect("Couldnt read line");
+
+        let vals: Vec<u32> = line.trim().split(',').map(|x|->u32{x.parse().unwrap()}).collect();
+        let index = vals[0];
+        let rest = &vals[1..].to_vec();
+
+        compatibility.insert(index, rest.clone());
+    }
+
+    //println!("{compatibility:?}");
+
+    reader.read_line(&mut line).expect("Couldnt read line");
+
+    for i in 0..NUM_CALLS {
+        line = String::new();
+        reader.read_line(&mut line).expect("Couldnt read line");
+
+        let vals: Vec<u32> = line.trim().split(',').map(|x|->u32{x.parse().unwrap()}).collect();
+
+        let call = Call {
+            index: vals[0],
+            origin: vals[1],
+            destination:vals[2],
+            size:vals[3],
+            cost_outsource:vals[4],
+            pickup_start:vals[5],
+            pickup_end:vals[6],
+            delivery_start:vals[7],
+            delivery_end:vals[8]
+        };
+
+        calls.push(call);
+    }
+
+    //println!("{calls:?}")
+
+    // Read travels
+    
+    reader.read_line(&mut line).expect("Couldnt read line");
+
+    for _i in 0..NUM_NODES * NUM_NODES * NUM_VEHICLES {
+        line = String::new();
+        reader.read_line(&mut line).expect("Couldnt read line");
+
+        let vals: Vec<u32> = line.trim().split(',').map(|x|->u32{x.parse().unwrap()}).collect();
+
+        let travel = Travel {
+            vehicle_index: vals[0],
+            origin: vals[1],
+            destination: vals[2],
+            time: vals[3],
+            cost: vals[4]
+        };
+
+        travels.push(travel);
+    }
+    //println!("len: {travels:?}");
+
+
+    // Read loadings
+    reader.read_line(&mut line).expect("Couldnt read line");
+
+    for _i in 0..NUM_VEHICLES * NUM_CALLS{
+        line = String::new();
+        reader.read_line(&mut line).expect("Couldnt read line");
+
+        let vals: Vec<i32> = line.trim().split(',').map(|x|->i32{x.parse().unwrap()}).collect();
+
+        // If one element is -1 then not compatible -> skip
+        if vals[2] == -1 {continue;}
+
+        let loading = Loading {
+            vehicle_index: vals[0] as u32,
+            call_index: vals[1] as u32,
+            origin_time: vals[2] as u32,
+            origin_cost: vals[3] as u32,
+            destination_time: vals[4] as u32,
+            destination_cost: vals[5] as u32 
+        };
+
+        loadings.push(loading);
+    }
+    //println!("{loadings:?}")
+
+    drop(reader);
+    
+    return Instance {
+        num_nodes: NUM_NODES,
+        num_vehicles: NUM_VEHICLES,
+        num_calls: NUM_CALLS,
+        vehicles: vehicles,
+        compatibility: compatibility,
+        calls: calls,
+        travels: travels,
+        loadings: loadings
+    };
+}

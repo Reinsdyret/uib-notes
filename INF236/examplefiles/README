@@ -1,0 +1,10 @@
+
+hello.c       Parallelt hello world program
+hello_mp.c    Hello world med 20 tr√der, skriver ut id
+loop.c        Lastbalansering med triangul√r l√∏kke, dynamic scheduling
+random.c      Lastbalansering med triangul√r l√∏kke,runtime scheduling
+pi_seq.c      Sekvensiell beregning av pi
+pi.c          Beregner pi med 10 tr√•er, sekvensiell summering
+pi_localsum   Beregner pi med critical summering
+pi_reduction  Beregner pi med reduction p√• sum
+test.c        Kopier matrise

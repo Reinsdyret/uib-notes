@@ -1,0 +1,64 @@
+TRUCKS AND DRONES
+
+Truck drives a route, drone can divert for one stop.
+Drone can take one package to deliver before going back to the truck on its next stop.
+1 truck 2 drones 
+
+You cant recieve on same location 
+Only drone or truck per node
+
+Solution representation draft
+stops in order with labels for drone launch or retrive.
+
+0,a,11,10,a,b,12,9,b,8,7,b,4,3,b,a,1,b,2,5,a,b,6 # Not same solution instance as he wanted
+
+Here truck goes to stop 0, sends a to next number (11). Goes to 10 and recieves a and send b to next number (12)
+
+
+LINER SHIPPING with extra smaller boats
+
+Mother starts at a node s and has to end at that same node, with all daughter ships returned.
+Mother ship drives to some ports
+Smaller daughter ships can divert to different routes when mothership is at some port 
+Then daughter ships return to the SAME port as it left from.
+
+ONLY 1 MOTHER 
+0 to n-1 daughter vessels.
+
+maybe we can use 2 * n-1 dots in our solution representation.
+
+One example solution representation: DONT think it works (maybe tho with dots), because when daughter vesssels are increased to three the last daughter is not included
+PORTS 1234
+1 mother 
+2 daughter
+1a23a4bb
+ - Mother goes to 1, sends a to 2 and 3, a returns and mother goes to 4.
+ - Daughter ship b is at the end to times to represent that it is not used.
+
+with dots:
+solution for mother going to all ports
+1234......
+
+solution as above:
+1.23.4....
+
+
+
+
+
+OBLIG 2
+Each truck starts at its home node 
+A truck does not need to end at its home node
+
+dummy truck 
+an extra, use it for feasibility
+Outsource
+Put things we dont manage to do, can be assigned to the dummy truck and we know it will fulfill.
+
+Inital feasible solution:
+outsource everything
+for example:
+00011223344556677
+3 trucks, outsourced everything
+
+
