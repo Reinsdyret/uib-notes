@@ -6,55 +6,56 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct Vehicle {
-    index: u32,
-    home_node: u32,
-    start_time: u32,
-    capacity: u32,
+    pub index: u32,
+    pub home_node: u32,
+    pub start_time: u32,
+    pub capacity: u32,
 }
 
 #[derive(Debug)]
 pub struct Call {
-    index: u32,
-    origin: u32,
-    destination: u32,
-    size: u32,
-    cost_outsource: u32,
-    pickup_start: u32,
-    pickup_end: u32,
-    delivery_start: u32,
-    delivery_end: u32
+    pub index: u32,
+    pub origin: u32,
+    pub destination: u32,
+    pub size: u32,
+    pub cost_outsource: u32,
+    pub pickup_start: u32,
+    pub pickup_end: u32,
+    pub delivery_start: u32,
+    pub delivery_end: u32
 }
 
 #[derive(Debug)]
 pub struct Travel {
-    vehicle_index: u32,
-    origin: u32,
-    destination: u32,
-    time: u32,
-    cost: u32
+    pub vehicle_index: u32,
+    pub origin: u32,
+    pub destination: u32,
+    pub time: u32,
+    pub cost: u32
 }
 
 #[derive(Debug)]
 pub struct Loading {
-    vehicle_index: u32,
-    call_index: u32,
-    origin_time: u32,
-    origin_cost: u32,
-    destination_time: u32,
-    destination_cost: u32
+    pub vehicle_index: u32,
+    pub call_index: u32,
+    pub origin_time: u32,
+    pub origin_cost: u32,
+    pub destination_time: u32,
+    pub destination_cost: u32
 }
 
 #[derive(Debug)]
 pub struct Instance {
-    num_nodes: u32,
-    num_vehicles: u32,
-    num_calls: u32,
-    vehicles: Vec<Vehicle>,
-    compatibility: HashMap<u32, Vec<u32>>,
-    calls: Vec<Call>,
-    travels: Vec<Travel>,
-    loadings: Vec<Loading>
+    pub num_nodes: u32,
+    pub num_vehicles: u32,
+    pub num_calls: u32,
+    pub vehicles: Vec<Vehicle>,
+    pub compatibility: HashMap<u32, Vec<u32>>,
+    pub calls: Vec<Call>,
+    pub travels: HashMap<(u32, u32, u32), Travel>,
+    pub loadings: HashMap<(u32, u32), Loading>
 }
+
 
 
 pub fn read_file(file_path: &str) -> Instance {
@@ -65,8 +66,8 @@ pub fn read_file(file_path: &str) -> Instance {
     let mut vehicles: Vec<Vehicle> = Vec::new();
     let mut compatibility: HashMap<u32, Vec<u32>> = HashMap::new();
     let mut calls: Vec<Call> = Vec::new();
-    let mut travels: Vec<Travel> = Vec::new();
-    let mut loadings: Vec<Loading> = Vec::new();
+    let mut travels: HashMap<(u32, u32, u32), Travel> = HashMap::new();
+    let mut loadings: HashMap<(u32, u32), Loading> = HashMap::new();
 
     let mut line= String::new();
 
@@ -156,7 +157,7 @@ pub fn read_file(file_path: &str) -> Instance {
         calls.push(call);
     }
 
-    //println!("{calls:?}")
+    // println!("{calls:?}");
 
     // Read travels
     
@@ -176,7 +177,7 @@ pub fn read_file(file_path: &str) -> Instance {
             cost: vals[4]
         };
 
-        travels.push(travel);
+        travels.insert((vals[0], vals[1], vals[2]), travel);
     }
     //println!("len: {travels:?}");
 
@@ -202,7 +203,7 @@ pub fn read_file(file_path: &str) -> Instance {
             destination_cost: vals[5] as u32 
         };
 
-        loadings.push(loading);
+        loadings.insert((vals[0] as u32, vals[1] as u32), loading);
     }
     //println!("{loadings:?}")
 
