@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 file_reader = { path = "./src/file_reader" }
+checker = { path =  "./src/checker" }

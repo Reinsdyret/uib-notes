@@ -3,5 +3,9 @@ name = "checker"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "checker"
+path = "src/lib.rs"
+
 [dependencies]
 file_reader = { path = "../file_reader/" }

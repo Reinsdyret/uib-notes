@@ -3,6 +3,13 @@
 version = 4
 
 [[package]]
+name = "checker"
+version = "0.1.0"
+dependencies = [
+ "file_reader",
+]
+
+[[package]]
 name = "file_reader"
 version = "0.1.0"
 
@@ -10,5 +17,6 @@ version = "0.1.0"
 name = "hawkHaulTuah"
 version = "0.1.0"
 dependencies = [
+ "checker",
  "file_reader",
 ]
