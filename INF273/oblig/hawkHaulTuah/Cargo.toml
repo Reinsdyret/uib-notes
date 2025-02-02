@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 file_reader = { path = "./src/file_reader" }
 checker = { path =  "./src/checker" }
+random_meta = { path = "./src/random_meta" }

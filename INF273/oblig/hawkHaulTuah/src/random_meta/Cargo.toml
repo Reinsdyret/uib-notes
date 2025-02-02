@@ -1,0 +1,11 @@
+[package]
+name = "random_meta"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "random_meta"
+path = "src/lib.rs"
+
+[dependencies]
+rand = "0.8"
