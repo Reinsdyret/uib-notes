@@ -1,7 +1,7 @@
 use file_reader::parse_data::{ Vehicle, Call, Travel, Loading, Instance };
 use std::collections::HashSet;
 
-pub fn check_feasibility_and_get_cost(instance: &Instance, solution: &Vec<u32>) -> (u32, bool) {
+pub fn check_feasibility_and_get_cost(instance: &Instance, solution: &Vec<u32>) -> (u128, bool) {
     let mut routes: Vec<_> = solution.split(|num| num == &0).collect();
     let num_nodes = &instance.num_nodes;
     let num_vehicles = &instance.num_vehicles;
@@ -11,15 +11,15 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, solution: &Vec<u32>) 
     let travels = &instance.travels;
     let loadings = &instance.loadings;
 
-    let mut cost: u32 = 0;
+    let mut cost: u128 = 0;
 
     //println!("{routes:?}");
     // Dont run last route as everything is outsourced
     for (i, route) in routes[0 .. routes.len() -1].into_iter().enumerate() {
         // println!("{route:?}");
         let vehicle: &Vehicle = &instance.vehicles[i];
-        let mut time: u32 = vehicle.start_time;
-        let mut capacity: u32 = vehicle.capacity;
+        let mut time: u128 = vehicle.start_time;
+        let mut capacity: u128 = vehicle.capacity;
 
         let mut seen: HashSet<u32> = HashSet::new(); // Seen nodes, to know if pickup or delivery
         let mut prev_node: u32 = vehicle.home_node;

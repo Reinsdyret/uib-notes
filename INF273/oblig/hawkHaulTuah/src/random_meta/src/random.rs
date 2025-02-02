@@ -38,6 +38,8 @@ pub fn get_random_sol(num_calls: u32, num_vehicles: u32, compatibility: &HashMap
 
     solution.extend(routes[routes.len() - 1].clone());
 
+    assert_eq!(solution.len(), ((num_vehicles + num_calls * 2 - 1) as usize));
+
     return solution;
 
 }

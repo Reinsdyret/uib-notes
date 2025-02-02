@@ -8,8 +8,8 @@ use std::collections::HashMap;
 pub struct Vehicle {
     pub index: u32,
     pub home_node: u32,
-    pub start_time: u32,
-    pub capacity: u32,
+    pub start_time: u128,
+    pub capacity: u128,
 }
 
 #[derive(Debug)]
@@ -17,12 +17,12 @@ pub struct Call {
     pub index: u32,
     pub origin: u32,
     pub destination: u32,
-    pub size: u32,
-    pub cost_outsource: u32,
-    pub pickup_start: u32,
-    pub pickup_end: u32,
-    pub delivery_start: u32,
-    pub delivery_end: u32
+    pub size: u128,
+    pub cost_outsource: u128,
+    pub pickup_start: u128,
+    pub pickup_end: u128,
+    pub delivery_start: u128,
+    pub delivery_end: u128
 }
 
 #[derive(Debug)]
@@ -30,18 +30,18 @@ pub struct Travel {
     pub vehicle_index: u32,
     pub origin: u32,
     pub destination: u32,
-    pub time: u32,
-    pub cost: u32
+    pub time: u128,
+    pub cost: u128
 }
 
 #[derive(Debug)]
 pub struct Loading {
     pub vehicle_index: u32,
     pub call_index: u32,
-    pub origin_time: u32,
-    pub origin_cost: u32,
-    pub destination_time: u32,
-    pub destination_cost: u32
+    pub origin_time: u128,
+    pub origin_cost: u128,
+    pub destination_time: u128,
+    pub destination_cost: u128
 }
 
 #[derive(Debug)]
@@ -101,8 +101,8 @@ pub fn read_file(file_path: &str) -> Instance {
         let vehicle = Vehicle {
             index: vals[0],
             home_node: vals[1],
-            start_time: vals[2],
-            capacity: vals[3],
+            start_time: vals[2] as u128,
+            capacity: vals[3] as u128,
         };
 
         vehicles.push(vehicle);
@@ -140,13 +140,13 @@ pub fn read_file(file_path: &str) -> Instance {
         line = String::new();
         reader.read_line(&mut line).expect("Couldnt read line");
 
-        let vals: Vec<u32> = line.trim().split(',').map(|x|->u32{x.parse().unwrap()}).collect();
+        let vals: Vec<u128> = line.trim().split(',').map(|x|->u128{x.parse().unwrap()}).collect();
 
         let call = Call {
-            index: vals[0],
-            origin: vals[1],
-            destination:vals[2],
-            size:vals[3],
+            index: vals[0] as u32,
+            origin: vals[1] as u32,
+            destination:vals[2] as u32,
+            size: vals[3],
             cost_outsource:vals[4],
             pickup_start:vals[5],
             pickup_end:vals[6],
@@ -173,8 +173,8 @@ pub fn read_file(file_path: &str) -> Instance {
             vehicle_index: vals[0],
             origin: vals[1],
             destination: vals[2],
-            time: vals[3],
-            cost: vals[4]
+            time: vals[3] as u128,
+            cost: vals[4] as u128
         };
 
         travels.insert((vals[0], vals[1], vals[2]), travel);
@@ -189,7 +189,7 @@ pub fn read_file(file_path: &str) -> Instance {
         line = String::new();
         reader.read_line(&mut line).expect("Couldnt read line");
 
-        let vals: Vec<i32> = line.trim().split(',').map(|x|->i32{x.parse().unwrap()}).collect();
+        let vals: Vec<i128> = line.trim().split(',').map(|x|->i128{x.parse().unwrap()}).collect();
 
         // If one element is -1 then not compatible -> skip
         if vals[2] == -1 {continue;}
@@ -197,10 +197,10 @@ pub fn read_file(file_path: &str) -> Instance {
         let loading = Loading {
             vehicle_index: vals[0] as u32,
             call_index: vals[1] as u32,
-            origin_time: vals[2] as u32,
-            origin_cost: vals[3] as u32,
-            destination_time: vals[4] as u32,
-            destination_cost: vals[5] as u32 
+            origin_time: vals[2] as u128,
+            origin_cost: vals[3] as u128,
+            destination_time: vals[4] as u128,
+            destination_cost: vals[5] as u128 
         };
 
         loadings.insert((vals[0] as u32, vals[1] as u32), loading);
