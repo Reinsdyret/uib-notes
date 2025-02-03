@@ -40,7 +40,7 @@ fn main() {
     let mut total_time: u128 = 0;
     let mut total_sum: u128 = 0;
 
-    let mut n = 10;
+    let mut found_feasible = 0;
 
 
     for i in 1 ..=10 {
@@ -51,9 +51,10 @@ fn main() {
         
         // if no feasible solution found
         if cost == u128::MAX {
-            n -= 1;
             continue;
         }
+
+        found_feasible += 1;
 
         total_sum += cost;
         
@@ -72,7 +73,7 @@ fn main() {
     println!("Best cost: {best_cost}");
     println!("Best solution: {best_solution:?}");
     println!("Average time for 10k: {}ms", {total_time / 10});
-    if n > 0 { println!("Average cost: {}", total_sum / n); }
+    if found_feasible > 0 { println!("Average cost: {}", total_sum / found_feasible); }
     println!("Outsource cost: {init_cost}");
     println!("Improvement: {improvement}%");
 
@@ -84,6 +85,8 @@ fn run_random(instance: &Instance) -> (u128, Vec<u32>) {
     let mut solution: Vec<u32>;
     let mut cost: u128;
     let mut feasible: bool;
+    let mut sum_time_random: u128 = 0;
+    let mut sum_time_check: u128 = 0;
 
     for i in 0 .. 10_000 {
         solution = get_random_sol(instance.num_calls, instance.num_vehicles + 1, &instance.compatibility);
