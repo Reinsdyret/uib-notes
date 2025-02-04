@@ -1,0 +1,15 @@
+[package]
+name = "local_search"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "local_search"
+path = "src/lib.rs"
+
+[dependencies]
+rand = "0.8"
+checker = { path =  "../checker" }
+file_reader = { path = "../file_reader" }
+
+
