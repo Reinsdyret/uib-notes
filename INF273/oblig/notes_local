@@ -1,0 +1,5 @@
+
+local search
+
+search neighbours -> select one that is at least as good as current solution
+
