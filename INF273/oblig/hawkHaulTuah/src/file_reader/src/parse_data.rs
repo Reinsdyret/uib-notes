@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::env;
 use std::io::BufReader;
 use std::io::prelude::*;
@@ -50,7 +51,8 @@ pub struct Instance {
     pub num_vehicles: u32,
     pub num_calls: u32,
     pub vehicles: Vec<Vehicle>,
-    pub compatibility: HashMap<u32, Vec<u32>>,
+    pub compatibility: HashMap<u32, HashSet<u32>>,
+    pub valid_vehicles: HashMap<u32, Vec<u32>>,
     pub calls: Vec<Call>,
     pub travels: HashMap<(u32, u32, u32), Travel>,
     pub loadings: HashMap<(u32, u32), Loading>
@@ -64,7 +66,7 @@ pub fn read_file(file_path: &str) -> Instance {
     let mut reader = BufReader::new(file);
 
     let mut vehicles: Vec<Vehicle> = Vec::new();
-    let mut compatibility: HashMap<u32, Vec<u32>> = HashMap::new();
+    let mut compatibility: HashMap<u32, HashSet<u32>> = HashMap::new();
     let mut calls: Vec<Call> = Vec::new();
     let mut travels: HashMap<(u32, u32, u32), Travel> = HashMap::new();
     let mut loadings: HashMap<(u32, u32), Loading> = HashMap::new();
@@ -127,10 +129,14 @@ pub fn read_file(file_path: &str) -> Instance {
 
         let vals: Vec<u32> = line.trim().split(',').map(|x|->u32{x.parse().unwrap()}).collect();
         let index = vals[0];
-        let rest = &vals[1..].to_vec();
+        let mut rest = HashSet::new(); 
+        rest.extend(&vals[1..]);
 
-        compatibility.insert(index, rest.clone());
+        compatibility.insert(index, rest);
     }
+
+    // Insert compatibility for outsource truck
+    compatibility.insert(NUM_VEHICLES + 1, (1 .. NUM_CALLS + 1).collect());
 
     //println!("{compatibility:?}");
 
@@ -207,6 +213,14 @@ pub fn read_file(file_path: &str) -> Instance {
     }
     //println!("{loadings:?}")
 
+    // Compatibility formulated differently for faster lookup
+    let mut valid_vehicles: HashMap<u32, Vec<u32>> = HashMap::new();
+    for (vehicle, calls) in compatibility.iter() {
+        for &call in calls {
+            valid_vehicles.entry(call).or_insert_with(Vec::new).push(*vehicle);
+        }
+    }
+
     drop(reader);
     
     return Instance {
@@ -215,6 +229,7 @@ pub fn read_file(file_path: &str) -> Instance {
         num_calls: NUM_CALLS,
         vehicles: vehicles,
         compatibility: compatibility,
+        valid_vehicles: valid_vehicles,
         calls: calls,
         travels: travels,
         loadings: loadings

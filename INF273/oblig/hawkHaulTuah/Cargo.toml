@@ -7,3 +7,4 @@ edition = "2021"
 file_reader = { path = "./src/file_reader" }
 checker = { path =  "./src/checker" }
 random_meta = { path = "./src/random_meta" }
+local_search = { path = "./src/local_search" }

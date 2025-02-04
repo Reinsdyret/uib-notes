@@ -1,8 +1,7 @@
 use file_reader::parse_data::{ Vehicle, Call, Travel, Loading, Instance };
 use std::collections::HashSet;
 
-pub fn check_feasibility_and_get_cost(instance: &Instance, solution: &Vec<u32>) -> (u128, bool) {
-    let mut routes: Vec<_> = solution.split(|num| num == &0).collect();
+pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>>) -> (u128, bool) {
     let num_nodes = &instance.num_nodes;
     let num_vehicles = &instance.num_vehicles;
     let num_calls = &instance.num_calls;
@@ -30,6 +29,11 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, solution: &Vec<u32>) 
             // Verify if end time is less than current time then not feasible
             // Verity if capacity is over limit / < 0. Remember to add and remove capacity when loading and unloading.
             // One case for pickup
+
+            if !loadings.contains_key(&(vehicle.index, *call_index)) {
+                return (0, false);
+            }
+
             let call = &calls[(call_index - 1) as usize];
             let loading = &loadings[&(vehicle.index, *call_index)];
 
@@ -84,7 +88,7 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, solution: &Vec<u32>) 
 
     // Add all outsourced calls to cost
     let mut seen: HashSet<u32> = HashSet::new(); // Seen nodes
-    for call_index in routes[routes.len() - 1] {
+    for call_index in &routes[routes.len() - 1] {
         if seen.contains(call_index) { continue; }
         seen.insert(*call_index);
         let call = &calls[(call_index - 1) as usize];
