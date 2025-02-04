@@ -27,7 +27,7 @@ pub fn get_random_sol(num_calls: u32, num_vehicles: u32, compatibility: &HashMap
         route.extend(to_add);
 
         route.shuffle(&mut rng);
-    }    
+    }
 
     // Put solutions together into one vec
     let mut solution = Vec::new();
