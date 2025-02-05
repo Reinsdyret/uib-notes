@@ -163,8 +163,6 @@ pub fn read_file(file_path: &str) -> Instance {
         calls.push(call);
     }
 
-    // println!("{calls:?}");
-
     // Read travels
     
     reader.read_line(&mut line).expect("Couldnt read line");

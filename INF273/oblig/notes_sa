@@ -1,0 +1,71 @@
+
+p = e ^ (delta E / T)
+
+when we move from one solution to another
+T = (-delta E) / ln p
+
+If you know the range of delta E.
+You know ranges of probabilities
+THEN we can calculate the temperature.
+
+First to get start temp, use pmax and delta E max. For final use min values.
+
+Algorithm isnt as sensitive to cooling schedule as it is to T0 and Tf
+if T0 = infinite -> random search
+if T0 = 0 -> local search 
+
+
+Cooling schedule
+Uses iteration index to calculate
+
+Linear:
+Ti = T0 - i * ((T0 - Tf) / N)
+
+Exponential: MOST POPULAR 
+Ti+1 = a * Ti 
+0 < a < 1, f.eks 0.99
+
+Logarithmic:
+Ti = T0 - i^A 
+A = (ln(T0 - Tf) / ln(N))
+
+
+Hyperbolic: Kult
+
+
+if cooling schedule too fast -> stopt in local optimum too early
+If too slow -> Too slow convergence
+
+
+CHOOSING TEMPERATURE FOR sa 
+First run 100 iterations with fixed probability local search, we can tune the fixed probability.
+Find average of delta E in these iterations
+Calculate T0 and a even tho we can choose cooling schedule.
+No Tf because 10k iterations total.
+
+
+
+1 - reinsert
+Cant be too good :(
+DONT ALLOW GIVING THE SAME SOLUTION BACK
+Remove one call - WE CAN CHOOSE WHICH ONE -> PRIORITIZE DUMMY VEHICLE.
+Add it back - WE CAN CHOOSE WHERE -> NEVER OR ALMOST NEVER DUMMY VEHICLE.
+
+Ideas: 
+Always remove from dummy vehicle first 
+never insert into imcompatible vehicle
+
+
+Try to load balance -> Vehicles with least calls get from vehicles with alot of calls 
+
+
+
+
+
+
+
+
+
+
+
+

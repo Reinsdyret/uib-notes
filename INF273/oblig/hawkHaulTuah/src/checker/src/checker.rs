@@ -86,13 +86,13 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
         }   
     }
 
+
     // Add all outsourced calls to cost
     let mut seen: HashSet<u32> = HashSet::new(); // Seen nodes
     for call_index in &routes[routes.len() - 1] {
         if seen.contains(call_index) { continue; }
         seen.insert(*call_index);
         let call = &calls[(call_index - 1) as usize];
-
         cost += call.cost_outsource;
     }
     

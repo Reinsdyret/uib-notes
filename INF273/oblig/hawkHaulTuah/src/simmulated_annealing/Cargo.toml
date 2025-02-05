@@ -1,0 +1,8 @@
+[package]
+name = "simmulated_annealing"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+local_search = { path = "../local_search" }
+file_reader = { path = "../file_reader" }

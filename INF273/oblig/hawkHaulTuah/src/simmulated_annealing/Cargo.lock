@@ -68,16 +68,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hawkHaulTuah"
-version = "0.1.0"
-dependencies = [
- "checker",
- "file_reader",
- "local_search",
- "random_meta",
-]
-
-[[package]]
 name = "libc"
 version = "0.2.169"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -151,13 +141,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "random_meta"
-version = "0.1.0"
-dependencies = [
- "rand",
-]
-
-[[package]]
 name = "rayon"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -175,6 +158,14 @@ checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
+]
+
+[[package]]
+name = "simmulated_annealing"
+version = "0.1.0"
+dependencies = [
+ "file_reader",
+ "local_search",
 ]
 
 [[package]]
