@@ -8,3 +8,5 @@ file_reader = { path = "./src/file_reader" }
 checker = { path =  "./src/checker" }
 random_meta = { path = "./src/random_meta" }
 local_search = { path = "./src/local_search" }
+simmulated_annealing = { path = "./src/simmulated_annealing" }
+rayon = "1.10"

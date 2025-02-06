@@ -3,6 +3,13 @@ name = "simmulated_annealing"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "simmulated_annealing"
+path = "src/lib.rs"
+
+
 [dependencies]
 local_search = { path = "../local_search" }
 file_reader = { path = "../file_reader" }
+checker = { path =  "../checker" }
+rand = "0.8"

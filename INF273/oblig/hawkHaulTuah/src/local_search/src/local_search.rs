@@ -9,14 +9,18 @@ use std::sync::{Arc, Mutex};
 pub enum Operator {
     OneReinsert,
     TwoExchange,
-    ThreeExchange
+    ThreeExchange,
 }
 
-pub fn run_local_search(init_solution: &Vec<Vec<u32>>, operator: Operator, instance: &Instance) -> (Vec<Vec<u32>>, u128){
+pub fn run_local_search(
+    init_solution: &Vec<Vec<u32>>,
+    operator: Operator,
+    instance: &Instance,
+) -> (Vec<Vec<u32>>, u128) {
     let mut best_solution = init_solution.clone();
     let (mut best_cost, a) = check_feasibility_and_get_cost(&instance, &best_solution);
-    
-    for _i in 0 .. 10_000 {
+
+    for _i in 0..10_000 {
         // let new_solution = one_reinsert_random(&best_solution);
         let new_solution = one_reinsert_focus_dummy_random(&best_solution, instance);
 
@@ -31,9 +35,15 @@ pub fn run_local_search(init_solution: &Vec<Vec<u32>>, operator: Operator, insta
     return (best_solution, best_cost);
 }
 
-pub fn run_local_search_parallel(init_solution: &Vec<Vec<u32>>, operator: Operator, instance: &Instance) -> (Vec<Vec<u32>>, u128) {
+pub fn run_local_search_parallel(
+    init_solution: &Vec<Vec<u32>>,
+    operator: Operator,
+    instance: &Instance,
+) -> (Vec<Vec<u32>>, u128) {
     let best_solution = Arc::new(Mutex::new(init_solution.clone()));
-    let best_cost = Arc::new(Mutex::new(check_feasibility_and_get_cost(instance, &init_solution).0));
+    let best_cost = Arc::new(Mutex::new(
+        check_feasibility_and_get_cost(instance, &init_solution).0,
+    ));
 
     (0..10_000).into_par_iter().for_each(|_| {
         let current_solution = {
@@ -55,13 +65,16 @@ pub fn run_local_search_parallel(init_solution: &Vec<Vec<u32>>, operator: Operat
         }
     });
 
-    let best_solution = Arc::try_unwrap(best_solution).unwrap().into_inner().unwrap();
+    let best_solution = Arc::try_unwrap(best_solution)
+        .unwrap()
+        .into_inner()
+        .unwrap();
     let best_cost = Arc::try_unwrap(best_cost).unwrap().into_inner().unwrap();
-    
+
     (best_solution, best_cost)
 }
 
-pub fn one_reinsert_random(old_solution: &Vec<Vec<u32>>) -> Vec<Vec<u32>>{
+pub fn one_reinsert_random(old_solution: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     let mut rng = rand::thread_rng();
     let mut solution = old_solution.clone();
 
@@ -72,22 +85,26 @@ pub fn one_reinsert_random(old_solution: &Vec<Vec<u32>>) -> Vec<Vec<u32>>{
 
     let call_idx = rng.gen_range(0..solution[vehicle_from].len());
     let call = solution[vehicle_from].remove(call_idx);
-    
+
     if let Some(index) = solution[vehicle_from].iter().position(|&x| x == call) {
         solution[vehicle_from].remove(index);
-    } else { panic!("There were not two calls in vehicle") }
+    } else {
+        panic!("There were not two calls in vehicle")
+    }
 
     let vehicle_to = rng.gen_range(0..solution.len());
     let insert_idx = rng.gen_range(0..=solution[vehicle_to].len());
     solution[vehicle_to].insert(insert_idx, call);
     let insert_idx = rng.gen_range(0..=solution[vehicle_to].len());
     solution[vehicle_to].insert(insert_idx, call);
-    
+
     return solution;
 }
 
-
-pub fn one_reinsert_focus_dummy_random(old_solution: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
+pub fn one_reinsert_focus_dummy_random(
+    old_solution: &Vec<Vec<u32>>,
+    instance: &Instance,
+) -> Vec<Vec<u32>> {
     let mut rng = rand::thread_rng();
     let call: u32;
     let mut solution = old_solution.clone();
@@ -97,7 +114,7 @@ pub fn one_reinsert_focus_dummy_random(old_solution: &Vec<Vec<u32>>, instance: &
     if !solution[vehicle_from].is_empty() {
         let call_idx = rng.gen_range(0..solution[vehicle_from].len());
         call = solution[vehicle_from].remove(call_idx);
-        
+
         // println!("Chose call {call}");
     } else {
         vehicle_from = rng.gen_range(0..solution.len());
@@ -110,7 +127,9 @@ pub fn one_reinsert_focus_dummy_random(old_solution: &Vec<Vec<u32>>, instance: &
 
     if let Some(index) = solution[vehicle_from].iter().position(|&x| x == call) {
         solution[vehicle_from].remove(index);
-    } else { panic!("There were not two calls in vehicle") }
+    } else {
+        panic!("There were not two calls in vehicle")
+    }
 
     // Reinsert randomly
     let mut vehicle_to = rng.gen_range(0..solution.len());
@@ -127,8 +146,6 @@ pub fn one_reinsert_focus_dummy_random(old_solution: &Vec<Vec<u32>>, instance: &
     let insert_idx = rng.gen_range(0..=solution[vehicle_to].len());
     solution[vehicle_to].insert(insert_idx, call);
 
-    // Dont allow inserting on invalid vehicles
-
     return solution;
 }
 
@@ -136,7 +153,7 @@ fn get_index_least_calls(solution: &Vec<Vec<u32>>) -> usize {
     let mut least_calls = usize::MAX;
     let mut least_index = usize::MAX;
 
-    for (i, route) in solution[0 .. solution.len() - 1].iter().enumerate() {
+    for (i, route) in solution[0..solution.len() - 1].iter().enumerate() {
         if route.len() < least_calls {
             least_calls = route.len();
             least_index = i;
@@ -145,5 +162,3 @@ fn get_index_least_calls(solution: &Vec<Vec<u32>>) -> usize {
 
     return least_index;
 }
-
-

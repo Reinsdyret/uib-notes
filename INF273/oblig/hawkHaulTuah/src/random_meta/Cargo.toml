@@ -8,4 +8,7 @@ name = "random_meta"
 path = "src/lib.rs"
 
 [dependencies]
-rand = "0.8"
+rand = "0.9"
+rayon = "1.10"
+file_reader = { path = "../file_reader/" }
+checker = { path =  "../checker" }

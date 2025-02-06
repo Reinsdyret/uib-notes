@@ -12,4 +12,3 @@ rand = "0.8"
 checker = { path =  "../checker" }
 file_reader = { path = "../file_reader" }
 rayon = "1.7"
-
