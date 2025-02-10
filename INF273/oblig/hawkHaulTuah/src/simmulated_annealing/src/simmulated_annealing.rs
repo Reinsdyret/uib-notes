@@ -2,7 +2,7 @@ use std::f64;
 
 use checker::checker::*;
 use file_reader::parse_data::Instance;
-use local_search::local_search::*;
+use local_search::operators::*;
 
 pub fn run_sa(
     init_solution: &Vec<Vec<u32>>,
@@ -24,7 +24,7 @@ pub fn run_sa(
     let mut incumbent_cost = check_feasibility_and_get_cost(&instance, &incumbent).0;
 
     for i in 1..9900 {
-        new_solution = one_reinsert_focus_dummy_random(&incumbent, &instance);
+        new_solution = one_reinsert_focus_dummy_random_feasible(&incumbent, &instance);
         let (cost, feasible) = check_feasibility_and_get_cost(&instance, &new_solution);
         delta_e = cost as f64 - incumbent_cost as f64;
 

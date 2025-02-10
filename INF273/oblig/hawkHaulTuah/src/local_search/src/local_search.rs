@@ -6,6 +6,8 @@ use rand::prelude::*;
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};
 
+use crate::operators::*;
+
 pub enum Operator {
     OneReinsert,
     TwoExchange,
@@ -22,7 +24,7 @@ pub fn run_local_search(
 
     for _i in 0..10_000 {
         // let new_solution = one_reinsert_random(&best_solution);
-        let new_solution = one_reinsert_focus_dummy_random(&best_solution, instance);
+        let new_solution = one_reinsert_focus_dummy_random_feasible(&best_solution, instance);
 
         let (cost, feasible) = check_feasibility_and_get_cost(instance, &new_solution);
 
@@ -72,93 +74,4 @@ pub fn run_local_search_parallel(
     let best_cost = Arc::try_unwrap(best_cost).unwrap().into_inner().unwrap();
 
     (best_solution, best_cost)
-}
-
-pub fn one_reinsert_random(old_solution: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let mut rng = rand::thread_rng();
-    let mut solution = old_solution.clone();
-
-    let mut vehicle_from = rng.gen_range(0..solution.len());
-    while solution[vehicle_from].is_empty() {
-        vehicle_from = rng.gen_range(0..solution.len());
-    }
-
-    let call_idx = rng.gen_range(0..solution[vehicle_from].len());
-    let call = solution[vehicle_from].remove(call_idx);
-
-    if let Some(index) = solution[vehicle_from].iter().position(|&x| x == call) {
-        solution[vehicle_from].remove(index);
-    } else {
-        panic!("There were not two calls in vehicle")
-    }
-
-    let vehicle_to = rng.gen_range(0..solution.len());
-    let insert_idx = rng.gen_range(0..=solution[vehicle_to].len());
-    solution[vehicle_to].insert(insert_idx, call);
-    let insert_idx = rng.gen_range(0..=solution[vehicle_to].len());
-    solution[vehicle_to].insert(insert_idx, call);
-
-    return solution;
-}
-
-pub fn one_reinsert_focus_dummy_random(
-    old_solution: &Vec<Vec<u32>>,
-    instance: &Instance,
-) -> Vec<Vec<u32>> {
-    let mut rng = rand::thread_rng();
-    let call: u32;
-    let mut solution = old_solution.clone();
-    let mut vehicle_from: usize = solution.len() - 1;
-    // Choosing call, prioritizing outsource vehicle but still random call.
-    // Random vehicle if outsource vehicle is empty
-    if !solution[vehicle_from].is_empty() {
-        let call_idx = rng.gen_range(0..solution[vehicle_from].len());
-        call = solution[vehicle_from].remove(call_idx);
-
-        // println!("Chose call {call}");
-    } else {
-        vehicle_from = rng.gen_range(0..solution.len());
-        while solution[vehicle_from].is_empty() {
-            vehicle_from = rng.gen_range(0..solution.len());
-        }
-        let call_idx = rng.gen_range(0..solution[vehicle_from].len());
-        call = solution[vehicle_from].remove(call_idx);
-    }
-
-    if let Some(index) = solution[vehicle_from].iter().position(|&x| x == call) {
-        solution[vehicle_from].remove(index);
-    } else {
-        panic!("There were not two calls in vehicle")
-    }
-
-    // Reinsert randomly
-    let mut vehicle_to = rng.gen_range(0..solution.len());
-
-    while !instance.compatibility[&((vehicle_to + 1) as u32)].contains(&call) {
-        vehicle_to = rng.gen_range(0..solution.len());
-    }
-    // println!("Choose vehicle {vehicle_to}");
-
-    // Insert into vehicle with least amount of calls
-    let vehicle_to = get_index_least_calls(&solution);
-    let insert_idx = rng.gen_range(0..=solution[vehicle_to].len());
-    solution[vehicle_to].insert(insert_idx, call);
-    let insert_idx = rng.gen_range(0..=solution[vehicle_to].len());
-    solution[vehicle_to].insert(insert_idx, call);
-
-    return solution;
-}
-
-fn get_index_least_calls(solution: &Vec<Vec<u32>>) -> usize {
-    let mut least_calls = usize::MAX;
-    let mut least_index = usize::MAX;
-
-    for (i, route) in solution[0..solution.len() - 1].iter().enumerate() {
-        if route.len() < least_calls {
-            least_calls = route.len();
-            least_index = i;
-        }
-    }
-
-    return least_index;
 }

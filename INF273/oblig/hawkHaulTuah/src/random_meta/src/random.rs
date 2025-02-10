@@ -35,7 +35,7 @@ fn get_random_sol(
 
 pub fn run_random(instance: &Instance) -> (u128, Vec<Vec<u32>>) {
     let results: Vec<(u128, bool, Vec<Vec<u32>>)> = (0..10_000)
-        .into_par_iter()
+    .into_par_iter()
         .map(|_| {
             let solution = get_random_sol(
                 instance.num_calls,
