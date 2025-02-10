@@ -8,13 +8,6 @@ use std::time::Instant;
 use std::{u128, u32};
 
 fn main() {
-    // let solution: Vec<u32> = vec![0, 2, 2, 0, 1, 5, 5, 3, 1, 3, 0, 7, 4, 6, 7, 4, 6];
-    let solution: Vec<Vec<u32>> = vec![
-        vec![],
-        vec![],
-        vec![],
-        vec![1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7],
-    ];
     let filenames: Vec<&str> = vec![
         "src/data/Call_7_Vehicle_3.txt",
         "src/data/Call_18_Vehicle_5.txt",
@@ -26,27 +19,6 @@ fn main() {
 
     let filename = "src/data/Call_7_Vehicle_3.txt";
     let instance = read_file(filename);
-    println!(
-        "{:?}",
-        concat_solution(&get_init_solution(
-            instance.num_calls,
-            instance.num_vehicles
-        ))
-    );
-    println!(
-        "{:?}",
-        check_feasibility_and_get_cost(
-            &instance,
-            &get_init_solution(instance.num_calls, instance.num_vehicles)
-        )
-    );
-
-    // let filename = "src/data/Call_7_Vehicle_3.txt";
-    // let filename = "src/data/Call_18_Vehicle_5.txt";
-    // let filename = "src/data/Call_35_Vehicle_7.txt";
-    // let filename = "src/data/Call_80_Vehicle_20.txt";
-    // let filename = "src/data/Call_130_Vehicle_40.txt";
-    // let filename = "src/data/Call_300_Vehicle_90.txt";
 
     // run_random_report(filename);
     // run_local_search_report(filename);
