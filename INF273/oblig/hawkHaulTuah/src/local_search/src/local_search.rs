@@ -20,7 +20,7 @@ pub fn run_local_search(
     instance: &Instance,
 ) -> (Vec<Vec<u32>>, u128) {
     let mut best_solution = init_solution.clone();
-    let (mut best_cost, a) = check_feasibility_and_get_cost(&instance, &best_solution);
+    let (mut best_cost, _) = check_feasibility_and_get_cost(&instance, &best_solution);
 
     for _i in 0..10_000 {
         // let new_solution = one_reinsert_random(&best_solution);

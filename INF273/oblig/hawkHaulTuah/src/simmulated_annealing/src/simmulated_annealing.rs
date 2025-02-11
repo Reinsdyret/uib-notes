@@ -25,6 +25,7 @@ pub fn run_sa(
 
     for i in 1..9900 {
         new_solution = one_reinsert_focus_dummy_random_feasible(&incumbent, &instance);
+
         let (cost, feasible) = check_feasibility_and_get_cost(&instance, &new_solution);
         delta_e = cost as f64 - incumbent_cost as f64;
 

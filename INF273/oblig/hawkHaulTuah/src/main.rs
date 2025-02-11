@@ -17,20 +17,17 @@ fn main() {
         "src/data/Call_300_Vehicle_90.txt",
     ];
 
-    let filename = "src/data/Call_7_Vehicle_3.txt";
-    let instance = read_file(filename);
-
     // run_random_report(filename);
     // run_local_search_report(filename);
-    // for filename in filenames {
-    //     run_random_report(filename);
-    // }
+    //for filename in filenames {
+    //    run_random_report(filename);
+    //}
+    //for filename in filenames {
+    //    run_simmulated_annealing_report(filename, true, 0.8, 0.1);
+    //}
     for filename in filenames {
-        run_simmulated_annealing_report(filename, true, 0.8, 0.1);
+        run_local_search_report(filename, true);
     }
-    // for filename in filenames {
-    //     run_local_search_report(filename, true);
-    // }
 }
 
 fn run_simmulated_annealing_report(filename: &str, parallel: bool, prob: f64, t_final: f64) {
@@ -61,7 +58,7 @@ fn run_simmulated_annealing_report(filename: &str, parallel: bool, prob: f64, t_
     let init_cost = check_feasibility_and_get_cost(&instance, &outsource_sol).0;
     let avg_cost = total_sum / 10;
     let diff_avg = init_cost - avg_cost;
-    let improvement_avg : f64 = (diff_avg as f64 / init_cost as f64) * 100.0;
+    let improvement_avg: f64 = (diff_avg as f64 / init_cost as f64) * 100.0;
     let diff_best = init_cost - best_cost;
     let improvement_best: f64 = (diff_best as f64 / init_cost as f64) * 100.0;
 
@@ -78,7 +75,7 @@ fn run_simmulated_annealing_report(filename: &str, parallel: bool, prob: f64, t_
         avg_cost,
         improvement_avg,
         improvement_best,
-        best_solution
+        concat_solution(&best_solution)
     );
 }
 
@@ -106,24 +103,27 @@ fn run_local_search_report(filename: &str, parallel: bool) {
 
     let total_sum: u128 = results.iter().map(|(_, cost)| cost).sum();
     let (best_solution, best_cost) = results.iter().min_by_key(|(_, cost)| *cost).unwrap();
-
     let init_cost = check_feasibility_and_get_cost(&instance, &outsource_sol).0;
     let avg_cost = total_sum / 10;
-    let diff = init_cost - avg_cost;
-    let improvement : f64 = (diff as f64 / init_cost as f64) * 100.0;
+    let diff_avg = init_cost - avg_cost;
+    let improvement_avg: f64 = (diff_avg as f64 / init_cost as f64) * 100.0;
+    let diff_best = init_cost - best_cost;
+    let improvement_best: f64 = (diff_best as f64 / init_cost as f64) * 100.0;
 
     println!(
-        "Ran local search with 1-reinsert. {filename}
+        "Ran simmulated_annealing with 1-reinsert. {filename}
     Avg time taken: {}ms
     Best cost: {}
     Avg cost: {}
     Improvement avg: {}%
+    Improvement best: {}%
     Solution: {:?}",
         total_time / 10,
         best_cost,
         avg_cost,
-        improvement,
-        best_solution
+        improvement_avg,
+        improvement_best,
+        concat_solution(&best_solution)
     );
 }
 
