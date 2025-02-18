@@ -8,7 +8,7 @@ name = "local_search"
 path = "src/lib.rs"
 
 [dependencies]
-rand = "0.8"
+rand = "0.9.0"
 checker = { path =  "../checker" }
 file_reader = { path = "../file_reader" }
 rayon = "1.7"

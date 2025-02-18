@@ -105,15 +105,18 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
     return (cost, true);
 }
 
-
-pub fn check_feasibility_one_vehicle(instance: &Instance, route: &Vec<u32>, vehicle_id: u32) -> (u128, bool) {
+pub fn check_feasibility_one_vehicle(
+    instance: &Instance,
+    route: &Vec<u32>,
+    vehicle_id: usize,
+) -> (u128, bool) {
     let calls = &instance.calls;
     let travels = &instance.travels;
     let loadings = &instance.loadings;
 
     let mut cost: u128 = 0;
 
-    let vehicle: &Vehicle = &instance.vehicles[vehicle_id as usize];
+    let vehicle: &Vehicle = &instance.vehicles[vehicle_id];
     let mut time: u128 = vehicle.start_time;
     let mut capacity: u128 = vehicle.capacity;
 

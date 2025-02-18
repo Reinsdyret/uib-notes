@@ -22,12 +22,12 @@ fn main() {
     //for filename in filenames {
     //    run_random_report(filename);
     //}
-    //for filename in filenames {
-    //    run_simmulated_annealing_report(filename, true, 0.8, 0.1);
-    //}
     for filename in filenames {
-        run_local_search_report(filename, true);
+        run_simmulated_annealing_report(filename, true, 0.8, 0.1);
     }
+    //for filename in filenames {
+    //    run_local_search_report(filename, true);
+    //}
 }
 
 fn run_simmulated_annealing_report(filename: &str, parallel: bool, prob: f64, t_final: f64) {
