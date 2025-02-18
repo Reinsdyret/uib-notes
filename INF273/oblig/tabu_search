@@ -1,0 +1,27 @@
+store results to not search again
+allow non improving moves
+use memory to avoid looping
+
+pseudo:
+  choose candidates
+  choose best with some measure
+  update memory (tabu list) and update current
+
+Tabu criterion
+  Avoid visiting the same solution several times 
+  Cant store all states visited (too big and time consuming)
+  We store some attributes. Such as node 4 and 1 was selected or the edge 2,4 
+
+tabu tenure
+  The number of iterations you want to keep something in the tabu list
+  If we keep it for very long -> gets stuck somewhere easier
+  If we keep it short -> Risk of cycles is high
+  Dynamic is better:
+    Change tabu tenure at certain intervals
+    When stuck, increase tenure for that part.
+
+Always accept a solution if it is better than what we have seen. aspiration
+Even if it is tabu because we are then guaranteed that we havent visited it before.
+
+all moves are tabu:
+  just take one
