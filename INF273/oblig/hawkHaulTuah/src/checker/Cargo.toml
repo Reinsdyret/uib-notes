@@ -10,3 +10,4 @@ path = "src/lib.rs"
 [dependencies]
 file_reader = { path = "../file_reader/" }
 rayon = "1.10.0"
+log = "0.4.25"

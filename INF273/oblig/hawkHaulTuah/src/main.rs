@@ -1,6 +1,7 @@
 use checker::checker::*;
 use file_reader::parse_data::*; // Import read_file function
 use local_search::{local_search::*, operators};
+use log::{debug, error, info, log_enabled, warn, Level};
 use random_meta::random::*;
 use rayon::prelude::*;
 use simmulated_annealing::simmulated_annealing::*;
@@ -16,6 +17,9 @@ fn main() {
         "src/data/Call_130_Vehicle_40.txt",
         "src/data/Call_300_Vehicle_90.txt",
     ];
+    env_logger::init();
+    info!("STARTEd");
+    warn!("Start");
 
     // run_random_report(filename);
     // run_local_search_report(filename);

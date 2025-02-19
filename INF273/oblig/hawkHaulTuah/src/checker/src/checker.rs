@@ -1,4 +1,5 @@
 use file_reader::parse_data::{Call, Instance, Loading, Travel, Vehicle};
+use log::{debug, error, info, log_enabled, warn, Level};
 use std::collections::HashSet;
 
 pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>>) -> (u128, bool) {
@@ -27,6 +28,7 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
             // One case for pickup
 
             if !loadings.contains_key(&(vehicle.index, *call_index)) {
+                info!("Call not compatible with vehicle");
                 return (0, false);
             }
 
@@ -44,6 +46,7 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
                 time += travel.time;
 
                 if call.pickup_end < time {
+                    info!("Vehicle did not have time for pickup");
                     return (0, false);
                 }
 
@@ -54,6 +57,7 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
 
                 // Check if space and pickup package
                 if capacity < call.size {
+                    info!("Vehicle ran out of capacity");
                     return (0, false);
                 }
                 capacity -= call.size;
@@ -73,6 +77,7 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
                 let call = &calls[(call_index - 1) as usize];
 
                 if call.delivery_end < time {
+                    info!("Vehicle did not have time for delivery");
                     return (0, false);
                 }
 

@@ -9,7 +9,7 @@ pub fn one_reinsert_focus_dummy_random_feasible(
     old_solution: &Vec<Vec<u32>>,
     instance: &Instance,
 ) -> Vec<Vec<u32>> {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let call: u32;
     let mut solution = old_solution.clone();
     let mut vehicle_from: usize = solution.len() - 1;
@@ -18,13 +18,13 @@ pub fn one_reinsert_focus_dummy_random_feasible(
     // Random vehicle if outsource vehicle is empty
     if !solution[vehicle_from].is_empty() && rand::random::<f64>() < 0.4 {
         // Value here changes improvement alot
-        let call_idx = rng.gen_range(0..solution[vehicle_from].len());
+        let call_idx = rng.random_range(0..solution[vehicle_from].len());
         call = remove_call_from_vehicle(call_idx, vehicle_from, &mut solution);
         include_outsource = false;
         // println!("Chose call {call}");
     } else {
         vehicle_from = get_random_vehicle(&solution);
-        let call_idx = rng.gen_range(0..solution[vehicle_from].len());
+        let call_idx = rng.random_range(0..solution[vehicle_from].len());
         call = remove_call_from_vehicle(call_idx, vehicle_from, &mut solution);
         include_outsource = true;
     }
@@ -40,8 +40,8 @@ pub fn one_reinsert_focus_dummy_random_feasible(
     {
         vehicle_to_idx = (solution.len() - 1) as u32;
 
-        insert_idx1 = rng.gen_range(0..=solution[solution.len() - 1].len());
-        insert_idx2 = rng.gen_range(0..=solution[solution.len() - 1].len());
+        insert_idx1 = rng.random_range(0..=solution[solution.len() - 1].len());
+        insert_idx2 = rng.random_range(0..=solution[solution.len() - 1].len());
     } else {
         loop {
             // Find random but compatible vehicle
@@ -49,8 +49,8 @@ pub fn one_reinsert_focus_dummy_random_feasible(
             vehicle_to = solution[vehicle_to_idx as usize].clone();
 
             // Insert calls in random position
-            insert_idx1 = rng.gen_range(0..=vehicle_to.len());
-            insert_idx2 = rng.gen_range(0..=vehicle_to.len());
+            insert_idx1 = rng.random_range(0..=vehicle_to.len());
+            insert_idx2 = rng.random_range(0..=vehicle_to.len());
             vehicle_to.insert(insert_idx1, call);
             vehicle_to.insert(insert_idx2, call);
 
@@ -86,13 +86,13 @@ pub fn one_reinsert_probability(
     // Random vehicle if outsource vehicle is empty
     if !solution[vehicle_from].is_empty() && rand::random::<f64>() < 0.4 {
         // Value here changes improvement alot
-        let call_idx = rng.gen_range(0..solution[vehicle_from].len());
+        let call_idx = rng.random_range(0..solution[vehicle_from].len());
         call = remove_call_from_vehicle(call_idx, vehicle_from, &mut solution);
         include_outsource = false;
         // println!("Chose call {call}");
     } else {
         vehicle_from = get_random_vehicle(&solution);
-        let call_idx = rng.gen_range(0..solution[vehicle_from].len());
+        let call_idx = rng.random_range(0..solution[vehicle_from].len());
         call = remove_call_from_vehicle(call_idx, vehicle_from, &mut solution);
         include_outsource = true;
     }
@@ -103,7 +103,12 @@ pub fn one_reinsert_probability(
     let mut insert_idx2: usize;
     let mut i: usize = 0;
 
-    let weights = get_slack_probability(&instance, solution.clone());
+    let mut weights = get_slack_probability(&instance, solution.clone());
+    for i in 0..solution.len() - 1 {
+        if !instance.compatibility[&((i + 1) as u32)].contains(&call) {
+            weights[i] = 0.0;
+        }
+    }
     let dist = WeightedIndex::new(&weights).unwrap();
 
     loop {
@@ -112,8 +117,8 @@ pub fn one_reinsert_probability(
         vehicle_to = solution[vehicle_to_idx].clone();
 
         // Insert calls in random position
-        insert_idx1 = rng.gen_range(0..=vehicle_to.len());
-        insert_idx2 = rng.gen_range(0..=vehicle_to.len());
+        insert_idx1 = rng.random_range(0..=vehicle_to.len());
+        insert_idx2 = rng.random_range(0..=vehicle_to.len());
         vehicle_to.insert(insert_idx1, call);
         vehicle_to.insert(insert_idx2, call);
 
@@ -122,7 +127,7 @@ pub fn one_reinsert_probability(
         {
             break;
         }
-        if i >= 1000 {
+        if i >= 100 {
             break;
         }
         i += 1;
@@ -136,25 +141,25 @@ pub fn one_reinsert_probability(
 }
 
 fn get_random_compatible_vehicle(call: u32, instance: &Instance, include_outsource: bool) -> u32 {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let max_vehicle = if include_outsource {
         instance.num_vehicles
     } else {
         instance.num_vehicles - 1
     };
-    let mut vehicle_to_idx: u32 = rng.gen_range(0..max_vehicle) as u32;
+    let mut vehicle_to_idx: u32 = rng.random_range(0..max_vehicle) as u32;
     while !instance.compatibility[&(vehicle_to_idx + 1)].contains(&call) {
-        vehicle_to_idx = rng.gen_range(0..instance.num_vehicles) as u32;
+        vehicle_to_idx = rng.random_range(0..instance.num_vehicles) as u32;
     }
 
     return vehicle_to_idx;
 }
 
 fn get_random_vehicle(solution: &Vec<Vec<u32>>) -> usize {
-    let mut rng = rand::thread_rng();
-    let mut vehicle = rng.gen_range(0..solution.len());
+    let mut rng = rand::rng();
+    let mut vehicle = rng.random_range(0..solution.len());
     while solution[vehicle].is_empty() {
-        vehicle = rng.gen_range(0..solution.len());
+        vehicle = rng.random_range(0..solution.len());
     }
 
     return vehicle;
@@ -182,7 +187,7 @@ fn get_slack_probability(instance: &Instance, routes: Vec<Vec<u32>>) -> Vec<f64>
         weights.push(calculate_vehicle_slack(&instance, &route, i) as f64);
     }
 
-    weights.push(weights.iter().sum::<f64>() / (weights.len() as f64 * 2.0));
+    weights.push(weights.iter().sum::<f64>() / (weights.len() as f64));
 
     if weights.iter().sum::<f64>() == 0.0 {
         weights = vec![1.0; routes.len() - 1];
@@ -210,6 +215,9 @@ fn calculate_vehicle_slack(instance: &Instance, route: &Vec<u32>, vehicle_idx: u
     let mut seen: HashSet<u32> = HashSet::new();
     let mut prev_node = vehicle.home_node;
 
+    let mut big1: u128 = 0;
+    let mut big2: u128 = 0;
+
     for call_idx in route {
         let call = &instance.calls[(call_idx - 1) as usize];
         let loading = &instance.loadings[&(vehicle.index, *call_idx)];
@@ -220,6 +228,14 @@ fn calculate_vehicle_slack(instance: &Instance, route: &Vec<u32>, vehicle_idx: u
             prev_node = call.origin;
 
             time += travel.time;
+
+            let slack = call.pickup_end - time;
+            if slack > big1 {
+                big2 = big1;
+                big1 = slack;
+            } else if slack > big2 {
+                big2 = slack;
+            }
 
             total_slack += call.pickup_end - time;
 
@@ -234,6 +250,13 @@ fn calculate_vehicle_slack(instance: &Instance, route: &Vec<u32>, vehicle_idx: u
 
             time += travel.time;
 
+            let slack = call.delivery_end - time;
+            if slack > big1 {
+                big2 = big1;
+                big1 = slack;
+            } else if slack > big2 {
+                big2 = slack;
+            }
             total_slack += call.delivery_end - time;
 
             if time < call.delivery_start {
@@ -249,4 +272,5 @@ fn calculate_vehicle_slack(instance: &Instance, route: &Vec<u32>, vehicle_idx: u
         return 0.0;
     }
     return ((total_slack as f64) / (seen.len() as f64)) as f64;
+    //return (big1 + big2) as f64;
 }
