@@ -73,13 +73,13 @@ fn run_simmulated_annealing_report(filename: &str, parallel: bool, prob: f64, t_
     Avg cost: {}
     Improvement avg: {}%
     Improvement best: {}%
-    Solution: {:?}",
+    Solution:",
         total_time / 10,
         best_cost,
         avg_cost,
         improvement_avg,
         improvement_best,
-        concat_solution(&best_solution)
+        //concat_solution(&best_solution)
     );
 }
 

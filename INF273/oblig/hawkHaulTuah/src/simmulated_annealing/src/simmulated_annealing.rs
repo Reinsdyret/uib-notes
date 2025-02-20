@@ -67,7 +67,7 @@ fn find_avg_delta(
     let mut delta_e: f64;
 
     for _w in 1..=100 {
-        new_solution = one_reinsert_focus_dummy_random_feasible(&init_solution, &instance);
+        new_solution = one_reinsert_probability(&init_solution, &instance);
         let (cost, feasible) = check_feasibility_and_get_cost(&instance, &new_solution);
         delta_e = incumbent_cost as f64 - cost as f64;
 

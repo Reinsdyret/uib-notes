@@ -35,9 +35,7 @@ pub fn one_reinsert_focus_dummy_random_feasible(
     let mut insert_idx2: usize;
     let mut i: usize = 0;
 
-    if !solution[vehicle_from].is_empty()
-        && rand::random::<f64>() < 1.0 / (instance.num_vehicles as f64 * 2.0)
-    {
+    if !solution[vehicle_from].is_empty() && rand::random::<f64>() < 0.1 {
         vehicle_to_idx = (solution.len() - 1) as u32;
 
         insert_idx1 = rng.random_range(0..=solution[solution.len() - 1].len());
@@ -54,12 +52,10 @@ pub fn one_reinsert_focus_dummy_random_feasible(
             vehicle_to.insert(insert_idx1, call);
             vehicle_to.insert(insert_idx2, call);
 
-            if vehicle_to_idx as usize == solution.len() - 1
-                || check_feasibility_one_vehicle(&instance, &vehicle_to, vehicle_to_idx as usize).1
-            {
+            if check_feasibility_one_vehicle(&instance, &vehicle_to, vehicle_to_idx as usize).1 {
                 break;
             }
-            if i >= 10000 {
+            if i >= 100 {
                 break;
             }
             i += 1;
@@ -103,7 +99,7 @@ pub fn one_reinsert_probability(
     let mut insert_idx2: usize;
     let mut i: usize = 0;
 
-    let mut weights = get_slack_probability(&instance, solution.clone());
+    let mut weights = get_slack_probability(&instance, solution.clone(), include_outsource);
     for i in 0..solution.len() - 1 {
         if !instance.compatibility[&((i + 1) as u32)].contains(&call) {
             weights[i] = 0.0;
@@ -116,6 +112,8 @@ pub fn one_reinsert_probability(
         vehicle_to_idx = dist.sample(&mut rng);
         vehicle_to = solution[vehicle_to_idx].clone();
 
+        // Get a distribution of feasible inserts for that vehicle
+
         // Insert calls in random position
         insert_idx1 = rng.random_range(0..=vehicle_to.len());
         insert_idx2 = rng.random_range(0..=vehicle_to.len());
@@ -127,7 +125,7 @@ pub fn one_reinsert_probability(
         {
             break;
         }
-        if i >= 100 {
+        if i >= 1000 {
             break;
         }
         i += 1;
@@ -149,7 +147,7 @@ fn get_random_compatible_vehicle(call: u32, instance: &Instance, include_outsour
     };
     let mut vehicle_to_idx: u32 = rng.random_range(0..max_vehicle) as u32;
     while !instance.compatibility[&(vehicle_to_idx + 1)].contains(&call) {
-        vehicle_to_idx = rng.random_range(0..instance.num_vehicles) as u32;
+        vehicle_to_idx = rng.random_range(0..max_vehicle) as u32;
     }
 
     return vehicle_to_idx;
@@ -180,29 +178,38 @@ fn remove_call_from_vehicle(
     return call;
 }
 
-fn get_slack_probability(instance: &Instance, routes: Vec<Vec<u32>>) -> Vec<f64> {
+fn get_slack_probability(
+    instance: &Instance,
+    routes: Vec<Vec<u32>>,
+    include_outsource: bool,
+) -> Vec<f64> {
     let mut weights: Vec<f64> = Vec::new();
 
     for (i, route) in routes[0..routes.len() - 1].iter().enumerate() {
         weights.push(calculate_vehicle_slack(&instance, &route, i) as f64);
     }
 
-    weights.push(weights.iter().sum::<f64>() / (weights.len() as f64));
-
-    if weights.iter().sum::<f64>() == 0.0 {
-        weights = vec![1.0; routes.len() - 1];
-        weights.push(0.0);
-    }
     let max_weight = weights
         .clone()
         .into_iter()
         .max_by(|a, b| a.total_cmp(b))
         .unwrap();
 
+    if include_outsource {
+        weights.push(max_weight / weights.len() as f64);
+    } else {
+        weights.push(0.0)
+    }
+
     for (i, route) in routes[0..routes.len() - 1].iter().enumerate() {
         if route.len() == 0 {
             weights[i] = max_weight;
         }
+    }
+
+    if weights.iter().sum::<f64>() == 0.0 {
+        weights = vec![1.0; routes.len() - 1];
+        weights.push(0.0);
     }
 
     return weights;
@@ -211,7 +218,11 @@ fn get_slack_probability(instance: &Instance, routes: Vec<Vec<u32>>) -> Vec<f64>
 fn calculate_vehicle_slack(instance: &Instance, route: &Vec<u32>, vehicle_idx: usize) -> f64 {
     let vehicle = &instance.vehicles[vehicle_idx];
     let mut total_slack: u128 = 0;
+    let mut total_capacity: u128 = vehicle.capacity;
+    let mut max_slack: u128 = 0;
+    let mut max_capacity: u128 = 0;
     let mut time: u128 = vehicle.start_time;
+    let mut capacity = vehicle.capacity;
     let mut seen: HashSet<u32> = HashSet::new();
     let mut prev_node = vehicle.home_node;
 
@@ -237,13 +248,22 @@ fn calculate_vehicle_slack(instance: &Instance, route: &Vec<u32>, vehicle_idx: u
                 big2 = slack;
             }
 
-            total_slack += call.pickup_end - time;
+            total_slack += slack;
 
             if time < call.pickup_start {
                 time = call.pickup_start;
             }
 
             time += loading.origin_time;
+
+            // Capacity summation
+            capacity -= call.size;
+            let capacity_diff = vehicle.capacity - capacity;
+            total_capacity += capacity_diff;
+
+            if capacity_diff > max_capacity {
+                max_capacity = capacity_diff;
+            }
         } else {
             let travel = &instance.travels[&(vehicle.index, prev_node, call.destination)];
             prev_node = call.destination;
@@ -264,13 +284,61 @@ fn calculate_vehicle_slack(instance: &Instance, route: &Vec<u32>, vehicle_idx: u
             }
 
             time += loading.destination_time;
+
+            // Capacity summation
+            capacity += call.size;
+            let capacity_diff = vehicle.capacity - capacity;
+            total_capacity += capacity_diff;
+
+            if capacity_diff > max_capacity {
+                max_capacity = capacity_diff;
+            }
         }
     }
 
     //println!("{:?}", ((total_slack as f64) / (seen.len() as f64)) as f64);
-    if ((total_slack as f64) / (seen.len() as f64)).is_nan() {
-        return 0.0;
-    }
-    return ((total_slack as f64) / (seen.len() as f64)) as f64;
+    // if ((total_slack as f64) / (seen.len() as f64)).is_nan() {
+    //     return 0.0;
+    // }
+    // return ((total_slack as f64) / (seen.len() as f64)) as f64;
     //return (big1 + big2) as f64;
+
+    let avg_capacity = (total_capacity as f64) / (route.len() as f64);
+    let avg_slack = (total_slack as f64) / (route.len() as f64);
+
+    let norm_capacity = avg_capacity / (max_capacity as f64);
+    let norm_slack = avg_slack / (big1 as f64);
+
+    let combined_score = 0.7 * norm_capacity + 0.3 * norm_slack;
+
+    if combined_score.is_normal() {
+        return combined_score;
+    }
+    return 0.0;
+}
+
+fn get_all_feasible_inserts(
+    instance: &Instance,
+    solution: &Vec<u32>,
+    call: u32,
+    vechicle_id: usize,
+) -> (Vec<f64>, Vec<(usize, usize)>) {
+    let mut costs: Vec<f64> = Vec::new();
+    let mut feasible: Vec<(usize, usize)> = Vec::new();
+
+    for i in 0..solution.len() {
+        for j in i..solution.len() {
+            let mut test_solution = solution.clone();
+            test_solution.insert(i, call);
+            test_solution.insert(j, call);
+
+            let (cost, feas) = check_feasibility_one_vehicle(instance, &test_solution, vechicle_id);
+            if feas {
+                costs.push(cost as f64);
+                feasible.push((i, j));
+            }
+        }
+    }
+
+    return (costs, feasible);
 }
