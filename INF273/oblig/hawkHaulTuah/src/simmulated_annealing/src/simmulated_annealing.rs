@@ -23,6 +23,7 @@ pub fn run_sa(
     let mut delta_e: f64;
     let mut best_cost = check_feasibility_and_get_cost(&instance, &best_solution).0;
     let mut incumbent_cost = check_feasibility_and_get_cost(&instance, &incumbent).0;
+    let mut p: f64 = 0.9;
 
     for i in 1..9900 {
         new_solution = one_reinsert_probability(&incumbent, &instance);
@@ -30,7 +31,7 @@ pub fn run_sa(
         let (cost, feasible) = check_feasibility_and_get_cost(&instance, &new_solution);
         delta_e = cost as f64 - incumbent_cost as f64;
 
-        let p = f64::consts::E.powf((-1.0 * delta_e) / temp);
+        p = f64::consts::E.powf((-1.0 * delta_e) / temp);
 
         if feasible && delta_e < 0.0 {
             incumbent = new_solution;
