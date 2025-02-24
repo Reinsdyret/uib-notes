@@ -3,6 +3,7 @@ use std::f64;
 use checker::checker::*;
 use file_reader::parse_data::Instance;
 use local_search::operators::*;
+use rand::{random, thread_rng, Rng};
 
 pub fn run_sa(
     init_solution: &Vec<Vec<u32>>,
@@ -49,6 +50,7 @@ pub fn run_sa(
 
     return (best_solution, best_cost);
 }
+
 
 fn find_avg_delta(
     init_solution: &Vec<Vec<u32>>,

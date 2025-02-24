@@ -125,7 +125,7 @@ pub fn one_reinsert_probability(
         {
             break;
         }
-        if i >= 1000 {
+        if i >= 100 {
             break;
         }
         i += 1;
@@ -136,6 +136,102 @@ pub fn one_reinsert_probability(
     vehicle_to.insert(insert_idx2, call);
 
     return solution;
+}
+
+pub fn rearrange(old_solution: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
+    // This sucks balls, can never find a feasible solution
+    // Rearrange one random vehicle until the result is feasible or max iteration
+    let mut rng = rand::rng();
+    let vehicle_idx = rng.random_range(0..old_solution.len() - 1); // Dont include outsource
+
+    let mut vehicle_route = old_solution[vehicle_idx].clone();
+    vehicle_route.shuffle(&mut rng);
+
+    let mut i = 1;
+
+    while i <= 2000 && !check_feasibility_one_vehicle(&instance, &vehicle_route, vehicle_idx).1 {
+        let vehicle_idx = rng.random_range(0..old_solution.len() - 1); // Dont include outsource
+
+        let mut vehicle_route = old_solution[vehicle_idx].clone();
+        vehicle_route.shuffle(&mut rng);
+        i += 1;
+    }
+
+    if !check_feasibility_one_vehicle(&instance, &vehicle_route, vehicle_idx).1 {
+        return one_reinsert_probability(&old_solution, &instance);
+    }
+
+    let mut solution = old_solution.clone();
+    solution[vehicle_idx] = vehicle_route;
+
+    return solution;
+}
+
+pub fn two_opt(old_solution: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
+    // Sucks balls
+    let mut rng = rand::rng();
+    let mut solution = old_solution.clone();
+
+    // Try up to 20 different 2-opt moves
+    for _ in 0..2000 {
+        let vehicle_idx = rng.random_range(0..solution.len() - 1);
+        let route = &mut solution[vehicle_idx];
+        if route.len() < 4 {
+            continue;
+        }
+        // Select two random positions in the route
+        let pos1 = rng.random_range(0..route.len() - 1);
+        let pos2 = rng.random_range(pos1 + 1..route.len());
+        if pos1.abs_diff(pos2) < 2 { continue; }
+        
+        // Create a new route with the segment between pos1 and pos2 reversed
+        let mut new_route = route.clone();
+        new_route[pos1..=pos2].reverse();
+        
+        // If valid and feasible, apply the change
+        if check_feasibility_one_vehicle(instance, &new_route, vehicle_idx).1 {
+            *route = new_route;
+            break;
+        }
+    }
+
+    solution
+}
+
+pub fn adjacent_swap(old_solution: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
+    // SUCKS SHITE
+    let mut rng = rand::rng();
+    let mut solution = old_solution.clone();
+    
+    // Try up to 20 different vehicles
+    for _ in 0..20 {
+        let vehicle_idx = rng.random_range(0..solution.len() - 1); // Don't include outsource
+        let route = &mut solution[vehicle_idx];
+        
+        if route.len() < 4 { // Need at least 2 calls (4 positions) to swap
+            continue;
+        }
+
+        // Try up to 10 random positions in the route
+        for _ in 0..10 {
+            let pos = rng.random_range(0..route.len() - 1);
+            let mut new_route = route.clone();
+            
+            // Swap the calls at positions pos and pos+1
+            new_route.swap(pos, pos + 1);
+            
+            // Check if the new route is feasible and has better cost
+            let (new_cost, is_feasible) = check_feasibility_one_vehicle(instance, &new_route, vehicle_idx);
+            let (old_cost, _) = check_feasibility_one_vehicle(instance, route, vehicle_idx);
+            
+            if is_feasible && new_cost < old_cost {
+                *route = new_route;
+                return solution;
+            }
+        }
+    }
+
+    solution
 }
 
 fn get_random_compatible_vehicle(call: u32, instance: &Instance, include_outsource: bool) -> u32 {
@@ -342,3 +438,5 @@ fn get_all_feasible_inserts(
 
     return (costs, feasible);
 }
+
+
