@@ -26,7 +26,11 @@ pub fn run_sa(
     let mut p: f64 = 0.9;
 
     for i in 1..9900 {
-        new_solution = one_reinsert_probability(&incumbent, &instance);
+        if random::<f64>() < 0.0 {
+            new_solution = reinsert_sub_route(&instance, &incumbent);
+        } else {
+            new_solution = one_reinsert_probability(&incumbent, &instance);
+        }
 
         let (cost, feasible) = check_feasibility_and_get_cost(&instance, &new_solution);
         delta_e = cost as f64 - incumbent_cost as f64;
@@ -51,7 +55,6 @@ pub fn run_sa(
 
     return (best_solution, best_cost);
 }
-
 
 fn find_avg_delta(
     init_solution: &Vec<Vec<u32>>,

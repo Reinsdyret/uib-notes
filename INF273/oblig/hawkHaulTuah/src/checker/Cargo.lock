@@ -7,6 +7,7 @@ name = "checker"
 version = "0.1.0"
 dependencies = [
  "file_reader",
+ "log",
  "rayon",
 ]
 
@@ -44,6 +45,12 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 [[package]]
 name = "file_reader"
 version = "0.1.0"
+
+[[package]]
+name = "log"
+version = "0.4.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30bde2b3dc3671ae49d8e2e9f044c7c005836e7a023ee57cffa25ab82764bb9e"
 
 [[package]]
 name = "rayon"
