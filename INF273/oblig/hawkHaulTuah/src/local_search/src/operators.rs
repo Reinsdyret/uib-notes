@@ -136,7 +136,7 @@ pub fn one_reinsert_probability(old_route: &Vec<Vec<u32>>, instance: &Instance) 
     return route;
 }
 
-pub fn one_reinsert_greedy_insert(old_route: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
+pub fn one_reinsert_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     let mut rng = rand::rng();
     let call: u32;
     let mut route = old_route.clone();
@@ -286,7 +286,7 @@ pub fn reinsert_sub_route(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec
     // Only sample a subset of vehicles to improve performance
     let mut vehicle_indices: Vec<usize> = (0..old_route.len()-1).collect(); // Skip outsource vehicle
     vehicle_indices.shuffle(&mut rng);
-    let vehicle_sample = &vehicle_indices[0..std::cmp::min(3, vehicle_indices.len())];
+    let vehicle_sample = &vehicle_indices[0..std::cmp::min(30, vehicle_indices.len())];
     
     // For each sampled vehicle, find valid subroutes
     for &vehicle_idx in vehicle_sample {
@@ -296,10 +296,9 @@ pub fn reinsert_sub_route(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec
         if vehicle.len() < 4 {  // Need at least 2 calls (4 positions) for a meaningful subroute
             continue;
         }
-        
+
         // Find valid subroutes more efficiently
-        // We'll only check subroutes up to a certain length to avoid combinatorial explosion
-        let max_subroute_length = std::cmp::min(16, vehicle.len());
+        let max_subroute_length = std::cmp::min(30, vehicle.len());
         
         for subroute_len in 2..=max_subroute_length {
             for start in 0..=vehicle.len() - subroute_len {
@@ -380,7 +379,6 @@ pub fn reinsert_sub_route(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec
                 continue;
             }
             
-            // Try our advanced insertion method for this vehicle
             if let Some((pickup_idx, delivery_idx, cost)) = find_best_insertion_positions(
                 instance,
                 &new_solution[v_idx],
@@ -418,7 +416,7 @@ pub fn reinsert_sub_route(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec
 }
 
 
-pub fn two_call_swap_extended(old_route: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
+pub fn two_call_swap(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     // An enhanced version of two_call_swap that tries more combinations
     let mut rng = rand::rng();
     let mut best_route = old_route.clone();
@@ -435,7 +433,7 @@ pub fn two_call_swap_extended(old_route: &Vec<Vec<u32>>, instance: &Instance) ->
     }
     
     // Try multiple combinations for better results
-    let num_attempts = 15;
+    let num_attempts = 30;
     
     for _ in 0..num_attempts {
         // Select two different vehicles with probability based on route length
