@@ -8,7 +8,7 @@ use simmulated_annealing::simmulated_annealing::*;
 use std::time::Instant;
 use std::{u128, u32};
 use std::time::Duration;
-use local_search::operators::{one_reinsert_greedy_insert, reinsert_sub_route, two_call_swap, two_call_swap_extended};
+use local_search::operators::{one_reinsert_greedy_insert, reinsert_sub_route, two_call_swap};
 
 fn main() {
     let filenames: Vec<&str> = vec![
