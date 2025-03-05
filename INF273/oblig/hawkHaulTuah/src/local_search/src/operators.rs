@@ -136,6 +136,141 @@ pub fn one_reinsert_probability(old_route: &Vec<Vec<u32>>, instance: &Instance) 
     return route;
 }
 
+pub fn one_reinsert_greedy_insert(old_route: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
+    let mut rng = rand::rng();
+    let call: u32;
+    let mut route = old_route.clone();
+    let mut vehicle_from: usize = route.len() - 1;
+    let include_outsource: bool;
+    
+    // Prioritize removing a call from the outsource vehicle with 40% probability
+    if !route[vehicle_from].is_empty() && rand::random::<f64>() < 0.4 {
+        let call_idx = rng.random_range(0..route[vehicle_from].len());
+        call = remove_call_from_vehicle(call_idx, vehicle_from, &mut route);
+        include_outsource = false;
+    } else {
+        vehicle_from = get_random_vehicle(&route, true);
+        let call_idx = rng.random_range(0..route[vehicle_from].len());
+        call = remove_call_from_vehicle(call_idx, vehicle_from, &mut route);
+        include_outsource = true;
+    }
+
+    // Calculate vehicle selection weights based on slack capacity
+    let mut weights = get_slack_probability(&instance, route.clone(), include_outsource);
+    
+    // Filter out incompatible vehicles
+    for i in 0..route.len() - 1 {
+        if !instance.compatibility[&((i + 1) as u32)].contains(&call) {
+            weights[i] = 0.0;
+        }
+    }
+    
+    // Create weighted distribution for vehicle selection
+    let dist = match WeightedIndex::new(&weights) {
+        Ok(d) => d,
+        Err(_) => {
+            // Fallback if all weights are zero - just use the outsource vehicle
+            let mut new_route = route.clone();
+            let outsource_idx = new_route.len() - 1;
+            new_route[outsource_idx].push(call);
+            new_route[outsource_idx].push(call);
+            return new_route;
+        }
+    };
+    
+    // Sample multiple vehicles with probability based on slack
+    // Attempt to find good insertion positions in each vehicle
+    let num_vehicle_attempts = 5;
+    let mut best_solution = route.clone();
+    let mut best_cost = u128::MAX;
+    
+    for _ in 0..num_vehicle_attempts {
+        // Select vehicle based on weights
+        let vehicle_idx = dist.sample(&mut rng);
+        
+        // Skip if this is the outsource vehicle (we'll handle that case separately)
+        if vehicle_idx == route.len() - 1 {
+            continue;
+        }
+        
+        // Try to find best insertion positions in this vehicle
+        if let Some((pickup_idx, delivery_idx, cost)) = find_best_insertion_positions(
+            &instance, 
+            &route[vehicle_idx], 
+            vehicle_idx, 
+            call
+        ) {
+            // Create candidate solution
+            let mut candidate = route.clone();
+            candidate[vehicle_idx].insert(pickup_idx, call);
+            // Adjust delivery index if pickup comes before it
+            let adj_delivery_idx = if delivery_idx > pickup_idx { delivery_idx + 1 } else { delivery_idx };
+            candidate[vehicle_idx].insert(adj_delivery_idx, call);
+            
+            // Evaluate full solution cost
+            let (total_cost, is_feasible) = check_feasibility_and_get_cost(&instance, &candidate);
+            
+            // Update best solution if this is better
+            if is_feasible && total_cost < best_cost {
+                best_solution = candidate;
+                best_cost = total_cost;
+            }
+        }
+    }
+    
+    // If we found a feasible insertion with better cost, return it
+    if best_cost < u128::MAX {
+        return best_solution;
+    }
+    
+    // Otherwise, use the outsource vehicle as fallback
+    let mut outsource_solution = route.clone();
+    let outsource_idx = outsource_solution.len() - 1;
+    outsource_solution[outsource_idx].push(call);
+    outsource_solution[outsource_idx].push(call);
+    
+    return outsource_solution;
+}
+
+pub fn try_k_reinserts(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let mut rng = rng();
+    let k = 50;
+
+    let mut costs: Vec<u128> = Vec::new();
+    let mut reinserts: Vec<Vec<Vec<u32>>> = Vec::new();
+
+    for _i in 0..k {
+        let mut vehicle_from_idx = rng.random_range(0..old_route.len());
+
+        while old_route[vehicle_from_idx].len() == 0 {
+            vehicle_from_idx = rng.random_range(0..old_route.len());
+        }
+
+        let call_idx = rng.random_range(0..old_route[vehicle_from_idx].len());
+
+        let mut sol_copy = old_route.clone();
+        let call = remove_call_from_vehicle(call_idx, vehicle_from_idx, &mut sol_copy);
+
+        sol_copy = insert_best_position(&instance, &sol_copy, call);
+
+        let cost = check_feasibility_and_get_cost(&instance, &sol_copy).0;
+
+        costs.push(cost);
+        reinserts.push(sol_copy);
+    }
+
+    match WeightedIndex::new(&costs) {
+        Ok(dist) => {
+            // Select an index based on weights
+            let selected_idx = dist.sample(&mut rng);
+            return reinserts[selected_idx].clone();
+        }
+        Err(_) => {
+            return one_reinsert_probability(&old_route, &instance);
+        }
+    }
+}
+
 pub fn remove_from_vehicle_travel_long(
     instance: &Instance,
     old_route: &Vec<Vec<u32>>,
@@ -144,217 +279,254 @@ pub fn remove_from_vehicle_travel_long(
 }
 
 pub fn reinsert_sub_route(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    // Take a valid subroute from one vehicle
-    // How to choose:
-    //   Delta cost with and without that route
-    //   Cant be that many valid subroutes
-    //
-    // Reinsert calls one by one in another vehicle
-    let mut subroutes: Vec<(usize, usize, usize, u128)> = Vec::new();
-
-    let _ = (0..old_route.len()).for_each(|vehicle_idx| {
-        let vehicle = old_route[vehicle_idx].clone();
-        let mut valid_subroutes = Vec::new();
-        for i in 0..vehicle.len() {
-            for j in i..vehicle.len() {
-                let subroute = &vehicle[i..=j];
-
+    // Take a valid subroute from one vehicle and reinsert its calls in better positions
+    let mut subroutes: Vec<(usize, usize, usize, u128, Vec<u32>)> = Vec::new();
+    let mut rng = rand::rng();
+    
+    // Only sample a subset of vehicles to improve performance
+    let mut vehicle_indices: Vec<usize> = (0..old_route.len()-1).collect(); // Skip outsource vehicle
+    vehicle_indices.shuffle(&mut rng);
+    let vehicle_sample = &vehicle_indices[0..std::cmp::min(3, vehicle_indices.len())];
+    
+    // For each sampled vehicle, find valid subroutes
+    for &vehicle_idx in vehicle_sample {
+        let vehicle = &old_route[vehicle_idx];
+        
+        // Skip empty vehicles
+        if vehicle.len() < 4 {  // Need at least 2 calls (4 positions) for a meaningful subroute
+            continue;
+        }
+        
+        // Find valid subroutes more efficiently
+        // We'll only check subroutes up to a certain length to avoid combinatorial explosion
+        let max_subroute_length = std::cmp::min(16, vehicle.len());
+        
+        for subroute_len in 2..=max_subroute_length {
+            for start in 0..=vehicle.len() - subroute_len {
+                let end = start + subroute_len - 1;
+                let subroute = &vehicle[start..=end];
+                
                 if is_valid_subroute(subroute) {
-                    valid_subroutes.push((i, j));
+                    // Create a temporary solution with this subroute removed
+                    let mut new_vehicle = vehicle.clone();
+                    remove_subroute(&mut new_vehicle, start, end);
+                    
+                    // Create a new solution and estimate improvement
+                    let mut new_solution = old_route.clone();
+                    new_solution[vehicle_idx] = new_vehicle;
+                    
+                    // Extract unique calls in the subroute
+                    let unique_calls: HashSet<u32> = HashSet::from_iter(subroute.iter().cloned());
+                    let subroute_calls: Vec<u32> = unique_calls.into_iter().collect();
+                    
+                    // Calculate the delta cost
+                    let original_cost = check_feasibility_and_get_cost(instance, old_route).0;
+                    
+                    // Create a sandbox solution to test improvement potential
+                    let mut sandbox_solution = new_solution.clone();
+                    
+                    // First pass: quickly estimate potential improvement
+                    for &call in &subroute_calls {
+                        // Calculate cost of call in current position
+                        let original_vehicle_cost = check_feasibility_one_vehicle(instance, &vehicle, vehicle_idx).0;
+                        
+                        // Calculate cost if we insert this call optimally elsewhere
+                        sandbox_solution = insert_best_position(instance, &sandbox_solution, call);
+                    }
+                    
+                    let new_cost = check_feasibility_and_get_cost(instance, &sandbox_solution).0;
+                    let delta_cost = original_cost as i128 - new_cost as i128;
+                    
+                    // If this looks promising, add to candidates
+                    if delta_cost > 0 {
+                        // Store improvement potential along with the subroute details
+                        subroutes.push((vehicle_idx, start, end, delta_cost as u128, subroute_calls.clone()));
+                    }
                 }
             }
         }
-
-        if valid_subroutes.is_empty() {
-            info!("No subroutes found");
-        }
-
-        for (start, end) in valid_subroutes {
-            let mut new_vehicle = vehicle.clone();
-
-            remove_subroute(&mut new_vehicle, start, end);
-
-            let mut cost_without: u128;
-            let mut cost_with: u128;
-
-            // Has to check if vehicle is outsource and calculate new cost
-            if vehicle_idx == old_route.len() - 1 {
-                let calls: HashSet<&u32> = HashSet::from_iter(old_route[vehicle_idx].iter());
-                cost_with = 0;
-                cost_without = 0;
-                for call in calls {
-                    cost_with += instance.calls[*call as usize - 1].cost_outsource;
-                }
-
-                let calls_with: HashSet<&u32> = HashSet::from_iter(new_vehicle.iter());
-                for call in calls_with {
-                    cost_without += instance.calls[*call as usize - 1].cost_outsource;
-                }
-            } else {
-                let calls: HashSet<&u32> = HashSet::from_iter(vehicle[start..=end].iter());
-                let mut new_solution = old_route.clone();
-                new_solution[vehicle_idx] = new_vehicle.clone();
-                for call in calls {
-                    insert_best_position(&instance, &mut new_solution, *call);
-                }
-                cost_without = check_feasibility_and_get_cost(&instance, &new_solution).0;
-                cost_with = check_feasibility_and_get_cost(&instance, &old_route).0;
-            }
-
-            let delta_cost = cost_with as i128 - cost_without as i128;
-
-            if delta_cost > 0 {
-                subroutes.push((vehicle_idx, start, end, delta_cost as u128));
-            }
-        }
-    });
-
-    let (vehicle_idx, start, end, delta_cost) = if !subroutes.is_empty() {
-        // Create weights based on delta costs
-        // Need to ensure all weights are positive
-        let mut weights: Vec<u128> = subroutes.iter().map(|(_, _, _, cost)| *cost).collect();
-
-        // If there are any negative or zero delta costs, we need to adjust
-        let min_cost = weights.iter().min().unwrap_or(&1);
-        if *min_cost <= 0 {
-            // Add an offset to make all weights positive
-            weights = weights.iter().map(|&cost| (cost) as u128).collect();
-        }
-
-        // Create the weighted distribution
-        match WeightedIndex::new(&weights) {
-            Ok(dist) => {
-                // Select an index based on weights
-                let mut rng = rng();
-                let selected_idx = dist.sample(&mut rng);
-                subroutes[selected_idx].clone()
-            }
-            Err(_) => {
-                // Fallback to max selection if weighted index creation fails
-                *subroutes.iter().max_by_key(|(_, _, _, cost)| cost).unwrap()
-            }
-        }
-    } else {
-        // Handle empty subroutes case
+    }
+    
+    // If we found no promising subroutes, return the original solution
+    if subroutes.is_empty() {
         return old_route.clone();
-    };
-
-    // Insert the calls
+    }
+    
+    // Sort subroutes by delta_cost (higher first) and take top candidates
+    subroutes.sort_by_key(|(_, _, _, cost, _)| std::cmp::Reverse(*cost));
+    
+    // Take the top 3 subroutes or fewer if we don't have 3
+    let top_n = std::cmp::min(3, subroutes.len());
+    let selected_idx = rng.random_range(0..top_n);
+    let (vehicle_idx, start, end, _, subroute_calls) = &subroutes[selected_idx];
+    
+    // Remove the selected subroute
     let mut new_solution = old_route.clone();
-    let mut vehicle: Vec<u32> = new_solution[vehicle_idx].clone();
-    let subroute = &vehicle.clone()[start..=end];
-    let calls: HashSet<&u32> = HashSet::from_iter(subroute.iter());
-
-    remove_subroute(&mut vehicle, start, end);
-
-    new_solution[vehicle_idx] = vehicle;
-
-    for call in calls {
-        new_solution = insert_best_position(&instance, &new_solution, *call);
+    let mut vehicle = new_solution[*vehicle_idx].clone();
+    remove_subroute(&mut vehicle, *start, *end);
+    new_solution[*vehicle_idx] = vehicle;
+    
+    // Insert each call in the best position using our new greedy insertion approach
+    for &call in subroute_calls {
+        // Try to find best destinations for this call
+        let mut best_vehicle_idx = new_solution.len() - 1; // Default to outsource
+        let mut best_pickup_idx = 0;
+        let mut best_delivery_idx = 1;
+        let mut best_insertion_cost = u128::MAX;
+        
+        // Check multiple potential vehicles for insertion
+        for v_idx in 0..new_solution.len() - 1 {
+            if !instance.compatibility[&((v_idx + 1) as u32)].contains(&call) {
+                continue;
+            }
+            
+            // Try our advanced insertion method for this vehicle
+            if let Some((pickup_idx, delivery_idx, cost)) = find_best_insertion_positions(
+                instance,
+                &new_solution[v_idx],
+                v_idx,
+                call
+            ) {
+                if cost < best_insertion_cost {
+                    best_insertion_cost = cost;
+                    best_vehicle_idx = v_idx;
+                    best_pickup_idx = pickup_idx;
+                    best_delivery_idx = delivery_idx;
+                }
+            }
+        }
+        
+        // Insert at the best position found
+        if best_vehicle_idx == new_solution.len() - 1 {
+            // Outsource
+            new_solution[best_vehicle_idx].push(call);
+            new_solution[best_vehicle_idx].push(call);
+        } else {
+            // Regular vehicle
+            new_solution[best_vehicle_idx].insert(best_pickup_idx, call);
+            // Adjust the delivery index if pickup came before it
+            let adj_delivery_idx = if best_delivery_idx > best_pickup_idx { 
+                best_delivery_idx + 1 
+            } else { 
+                best_delivery_idx 
+            };
+            new_solution[best_vehicle_idx].insert(adj_delivery_idx, call);
+        }
     }
-
-    return new_solution;
+    
+    new_solution
 }
 
-pub fn rearrange(old_route: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
-    // This sucks balls, can never find a feasible route
-    // Rearrange one random vehicle until the result is feasible or max iteration
+
+pub fn two_call_swap_extended(old_route: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
+    // An enhanced version of two_call_swap that tries more combinations
     let mut rng = rand::rng();
-    let vehicle_idx = rng.random_range(0..old_route.len() - 1); // Dont include outsource
-
-    let mut vehicle_route = old_route[vehicle_idx].clone();
-    vehicle_route.shuffle(&mut rng);
-
-    let mut i = 1;
-
-    while i <= 2000 && !check_feasibility_one_vehicle(&instance, &vehicle_route, vehicle_idx).1 {
-        let vehicle_idx = rng.random_range(0..old_route.len() - 1); // Dont include outsource
-
-        let mut vehicle_route = old_route[vehicle_idx].clone();
-        vehicle_route.shuffle(&mut rng);
-        i += 1;
+    let mut best_route = old_route.clone();
+    let (best_cost, _) = check_feasibility_and_get_cost(instance, &best_route);
+    
+    // Get list of non-empty vehicles (excluding outsource)
+    let non_empty_vehicles: Vec<usize> = (0..old_route.len()-1)
+        .filter(|&idx| !old_route[idx].is_empty())
+        .collect();
+    
+    // Need at least 2 non-empty vehicles
+    if non_empty_vehicles.len() < 2 {
+        return best_route;
     }
-
-    if !check_feasibility_one_vehicle(&instance, &vehicle_route, vehicle_idx).1 {
-        return one_reinsert_probability(&old_route, &instance);
-    }
-
-    let mut route = old_route.clone();
-    route[vehicle_idx] = vehicle_route;
-
-    return route;
-}
-
-pub fn two_opt(old_route: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
-    // Sucks balls
-    let mut rng = rand::rng();
-    let mut route = old_route.clone();
-
-    // Try up to 20 different 2-opt moves
-    for _ in 0..2000 {
-        let vehicle_idx = rng.random_range(0..route.len() - 1);
-        let route = &mut route[vehicle_idx];
-        if route.len() < 4 {
+    
+    // Try multiple combinations for better results
+    let num_attempts = 15;
+    
+    for _ in 0..num_attempts {
+        // Select two different vehicles with probability based on route length
+        // Vehicles with more calls have higher probability of selection
+        let mut vehicle_weights: Vec<f64> = non_empty_vehicles
+            .iter()
+            .map(|&idx| old_route[idx].len() as f64)
+            .collect();
+        
+        if vehicle_weights.is_empty() || vehicle_weights.iter().sum::<f64>() == 0.0 {
+            return best_route;
+        }
+        
+        let dist = match WeightedIndex::new(&vehicle_weights) {
+            Ok(d) => d,
+            Err(_) => return best_route,
+        };
+        
+        let v1_idx_pos = dist.sample(&mut rng);
+        let v1_idx = non_empty_vehicles[v1_idx_pos];
+        
+        // Temporarily remove the selected vehicle for second selection
+        let mut remaining_vehicles = non_empty_vehicles.clone();
+        remaining_vehicles.remove(v1_idx_pos);
+        let v2_idx_pos = rng.random_range(0..remaining_vehicles.len());
+        let v2_idx = remaining_vehicles[v2_idx_pos];
+        
+        // Get a set of candidate calls from each vehicle
+        let unique_calls_v1: HashSet<u32> = HashSet::from_iter(old_route[v1_idx].iter().cloned());
+        let unique_calls_v2: HashSet<u32> = HashSet::from_iter(old_route[v2_idx].iter().cloned());
+        
+        // Convert to vectors for random access
+        let calls_v1: Vec<u32> = unique_calls_v1.into_iter().collect();
+        let calls_v2: Vec<u32> = unique_calls_v2.into_iter().collect();
+        
+        if calls_v1.is_empty() || calls_v2.is_empty() {
             continue;
         }
-        // Select two random positions in the route
-        let pos1: usize = rng.random_range(0..route.len() - 1);
-        let pos2: usize = rng.random_range(pos1 + 1..route.len());
-        if pos1.abs_diff(pos2) < 2 {
+        
+        // Select one random call from each vehicle
+        let call1 = calls_v1[rng.random_range(0..calls_v1.len())];
+        let call2 = calls_v2[rng.random_range(0..calls_v2.len())];
+        
+        // Check vehicle compatibility for both calls
+        if !instance.compatibility[&((v2_idx + 1) as u32)].contains(&call1) || 
+           !instance.compatibility[&((v1_idx + 1) as u32)].contains(&call2) {
             continue;
         }
-
-        // Create a new route with the segment between pos1 and pos2 reversed
-        let mut new_route = route.clone();
-        new_route[pos1..=pos2].reverse();
-
-        // If valid and feasible, apply the change
-        if check_feasibility_one_vehicle(instance, &new_route, vehicle_idx).1 {
-            *route = new_route;
-            break;
-        }
-    }
-
-    route
-}
-
-pub fn adjacent_swap(old_route: &Vec<Vec<u32>>, instance: &Instance) -> Vec<Vec<u32>> {
-    // SUCKS SHITE
-    let mut rng = rand::rng();
-    let mut routes = old_route.clone();
-
-    // Try up to 20 different vehicles
-    for _ in 0..20 {
-        let vehicle_idx = rng.random_range(0..routes.len() - 1); // Don't include outsource
-        let route = &mut routes[vehicle_idx];
-
-        if route.len() < 4 {
-            // Need at least 2 calls (4 positions) to swap
-            continue;
-        }
-
-        // Try up to 10 random positions in the route
-        for _ in 0..10 {
-            let pos = rng.random_range(0..route.len() - 1);
-            let mut new_route = route.clone();
-
-            // Swap the calls at positions pos and pos+1
-            new_route.swap(pos, pos + 1);
-
-            // Check if the new route is feasible and has better cost
-            let (new_cost, is_feasible) =
-                check_feasibility_one_vehicle(instance, &new_route, vehicle_idx);
-            let (old_cost, _) = check_feasibility_one_vehicle(instance, route, vehicle_idx);
-
-            if is_feasible && new_cost < old_cost {
-                *route = new_route;
-                return routes;
+        
+        // Create a new solution with the calls removed
+        let mut new_route = old_route.clone();
+        
+        // Find and remove call1 from vehicle1
+        let call1_pos1 = new_route[v1_idx].iter().position(|&x| x == call1).unwrap();
+        new_route[v1_idx].remove(call1_pos1);
+        let call1_pos2 = new_route[v1_idx].iter().position(|&x| x == call1).unwrap();
+        new_route[v1_idx].remove(call1_pos2);
+        
+        // Find and remove call2 from vehicle2
+        let call2_pos1 = new_route[v2_idx].iter().position(|&x| x == call2).unwrap();
+        new_route[v2_idx].remove(call2_pos1);
+        let call2_pos2 = new_route[v2_idx].iter().position(|&x| x == call2).unwrap();
+        new_route[v2_idx].remove(call2_pos2);
+        
+        // Find best insertion positions for each call in the other vehicle
+        if let Some((p1_idx, d1_idx, _)) = find_best_insertion_positions(instance, &new_route[v2_idx], v2_idx, call1) {
+            // Insert call1 in vehicle2
+            new_route[v2_idx].insert(p1_idx, call1);
+            let adj_d1_idx = if d1_idx > p1_idx { d1_idx + 1 } else { d1_idx };
+            new_route[v2_idx].insert(adj_d1_idx, call1);
+            
+            if let Some((p2_idx, d2_idx, _)) = find_best_insertion_positions(instance, &new_route[v1_idx], v1_idx, call2) {
+                // Insert call2 in vehicle1
+                new_route[v1_idx].insert(p2_idx, call2);
+                let adj_d2_idx = if d2_idx > p2_idx { d2_idx + 1 } else { d2_idx };
+                new_route[v1_idx].insert(adj_d2_idx, call2);
+                
+                // Check if new solution is feasible and better
+                let (new_cost, is_feasible) = check_feasibility_and_get_cost(instance, &new_route);
+                
+                if is_feasible && new_cost < best_cost {
+                    best_route = new_route;
+                    break; // Exit early if we found an improvement
+                }
             }
         }
     }
-
-    routes
+    
+    best_route
 }
+
 
 fn get_random_compatible_vehicle(call: u32, instance: &Instance, include_outsource: bool) -> u32 {
     let mut rng = rand::rng();
@@ -550,27 +722,39 @@ fn calculate_vehicle_slack(instance: &Instance, route: &Vec<u32>, vehicle_idx: u
 fn insert_best_position(instance: &Instance, routes: &Vec<Vec<u32>>, call: u32) -> Vec<Vec<u32>> {
     // Run parallell to check best insert on all vehicles and calculate delta costs
 
-    let results: Vec<(u128, usize, usize, usize)> = (0..routes.len() - 1)
+    let results: Vec<(i128, usize, usize, usize)> = (0..routes.len() - 1)
         .into_par_iter()
-        .map(|vehicle_idx| {
-            let route = routes[vehicle_idx].clone();
+        .filter_map(|vehicle_idx| {
+            let route = &routes[vehicle_idx];
             if !instance.compatibility[&(vehicle_idx as u32 + 1)].contains(&call) {
-                return (u128::MAX, routes.len() - 1, 0, 0);
+                return None;
             }
             let (cost, (i1, i2)) = get_best_insert(&instance, &route, call, vehicle_idx);
-            return (cost, vehicle_idx, i1, i2);
+            if cost >= i128::MAX {
+                return None;
+            }
+            return Some((cost, vehicle_idx, i1, i2));
         })
         .collect();
 
-    let (_, vehicle_idx, i1, i2) = results.iter().min_by_key(|(cost, _, _, _)| cost).unwrap();
+    if !results.is_empty() {
+        let (_, vehicle_idx, i1, i2) = results.iter().min_by_key(|(cost, _, _, _)| cost).unwrap();
 
-    let mut new_route = routes.clone();
-    let mut vehicle: Vec<u32> = new_route[*vehicle_idx].clone();
-    vehicle.insert(*i1, call);
-    vehicle.insert(*i2, call);
-    new_route[*vehicle_idx] = vehicle;
+        let mut new_route = routes.clone();
+        let mut vehicle: Vec<u32> = new_route[*vehicle_idx].clone();
+        vehicle.insert(*i1, call);
+        vehicle.insert(*i2, call);
+        new_route[*vehicle_idx] = vehicle;
 
-    return new_route;
+        return new_route;
+    }
+
+    let mut outsource_solution = routes.clone();
+    let outsource_idx = outsource_solution.len() - 1;
+    outsource_solution[outsource_idx].push(call);
+    outsource_solution[outsource_idx].push(call);
+
+    return outsource_solution;
 }
 
 fn get_delta_cost_with_insert(
@@ -636,17 +820,32 @@ fn get_best_insert(
     route: &Vec<u32>,
     call: u32,
     vechicle_id: usize,
-) -> (u128, (usize, usize)) {
-    let mut min_delta_cost = u128::MAX;
+) -> (i128, (usize, usize)) {
+    if route.len() == 0 {
+        let (cost, feas) = check_insertion_feasibility(&instance, &route, vechicle_id, call, 0, 1);
+        if feas {
+            return (0 - cost as i128, (0, 1));
+        }
+    }
+    let mut min_delta_cost = i128::MAX;
     let mut min_delta_pair = (0, 0);
 
-    for i in 0..route.len() {
-        for j in i..route.len() {
-            let cost = get_delta_cost_with_insert(&instance, &route, vechicle_id, call, i, j);
+    let baseline_cost = check_feasibility_one_vehicle(&instance, &route, vechicle_id).0;
 
-            if cost < min_delta_cost {
-                min_delta_cost = cost;
-                min_delta_pair = (i, j);
+    for i in 0..=route.len() {
+        for j in i + 1..=route.len() {
+            let (cost, feasible) =
+                check_insertion_feasibility(&instance, &route, vechicle_id, call, i, j);
+
+            if feasible {
+                let delta_cost = cost as i128 - baseline_cost as i128;
+
+                if delta_cost < min_delta_cost {
+                    min_delta_cost = delta_cost;
+                    min_delta_pair = (i, j);
+                }
+            } else {
+                break;
             }
         }
     }
@@ -694,4 +893,65 @@ fn is_valid_subroute(subroute: &[u32]) -> bool {
 
 fn remove_subroute(route: &mut Vec<u32>, start_idx: usize, end_idx: usize) {
     route.drain(start_idx..=end_idx);
+}
+
+/// Find the best positions to insert a call's pickup and delivery in a vehicle route
+/// Returns (pickup_index, delivery_index, estimated_cost) if a feasible insertion is found
+/// Returns None if no feasible insertion is found
+fn find_best_insertion_positions(
+    instance: &Instance,
+    route: &Vec<u32>,
+    vehicle_idx: usize,
+    call: u32,
+) -> Option<(usize, usize, u128)> {
+    if !instance.compatibility[&((vehicle_idx + 1) as u32)].contains(&call) {
+        return None;
+    }
+    
+    // Store all feasible insertion positions with their costs
+    let mut feasible_insertions = Vec::new();
+    let num_positions = route.len() + 1;
+    let baseline_cost = check_feasibility_one_vehicle(instance, route, vehicle_idx).0;
+    
+    // Try all possible combinations of pickup and delivery positions
+    for pickup_idx in 0..num_positions {
+        // Delivery must come after pickup to maintain invariant
+        for delivery_idx in 0..num_positions {
+            // Check if this insertion combination is feasible
+            let (cost, is_feasible) = check_insertion_feasibility(
+                instance,
+                route,
+                vehicle_idx,
+                call,
+                pickup_idx,
+                delivery_idx,
+            );
+            
+            if is_feasible {
+                let delta_cost = if cost > baseline_cost {
+                    cost - baseline_cost
+                } else {
+                    0 // Cost improvement is good!
+                };
+                
+                feasible_insertions.push((pickup_idx, delivery_idx, delta_cost));
+            }
+        }
+    }
+    
+    // If we found any feasible insertions, return the one with minimum cost
+    if !feasible_insertions.is_empty() {
+        // Sort by cost (lowest first)
+        feasible_insertions.sort_by_key(|(_, _, cost)| *cost);
+        
+        // Return a random insertion from the top 3 best positions (if we have that many)
+        let top_n = std::cmp::min(3, feasible_insertions.len());
+        let mut rng = rand::rng();
+        let selected_idx = rng.random_range(0..top_n);
+        let (pickup_idx, delivery_idx, cost) = feasible_insertions[selected_idx];
+        
+        return Some((pickup_idx, delivery_idx, cost));
+    }
+    
+    None
 }

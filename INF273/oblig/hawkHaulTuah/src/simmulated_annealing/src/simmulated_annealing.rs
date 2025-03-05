@@ -26,10 +26,13 @@ pub fn run_sa(
     let mut p: f64 = 0.9;
 
     for i in 1..9900 {
-        if random::<f64>() < 0.0 {
+        let rand_val = random::<f64>();
+        if rand_val < 0.33 {
             new_solution = reinsert_sub_route(&instance, &incumbent);
+        } else if rand_val < 0.66 {
+            new_solution = one_reinsert_greedy_insert(&incumbent, &instance);
         } else {
-            new_solution = one_reinsert_probability(&incumbent, &instance);
+            new_solution = two_call_swap_extended(&incumbent, &instance);
         }
 
         let (cost, feasible) = check_feasibility_and_get_cost(&instance, &new_solution);
@@ -53,7 +56,7 @@ pub fn run_sa(
         temp = temp * alpha;
     }
 
-    return (best_solution, best_cost);
+    (best_solution, best_cost)
 }
 
 fn find_avg_delta(
@@ -73,7 +76,15 @@ fn find_avg_delta(
     let mut delta_e: f64;
 
     for _w in 1..=100 {
-        new_solution = one_reinsert_probability(&init_solution, &instance);
+        // Mix operators during warmup phase with our improved operators
+        let rand_val = rand::random::<f64>();
+        if rand_val < 0.33 {
+            new_solution = reinsert_sub_route(&instance, &incumbent);
+        } else if rand_val < 0.66 {
+            new_solution = one_reinsert_greedy_insert(&incumbent, &instance);
+        } else {
+            new_solution = two_call_swap_extended(&incumbent, &instance);
+        }
         let (cost, feasible) = check_feasibility_and_get_cost(&instance, &new_solution);
         delta_e = incumbent_cost as f64 - cost as f64;
 

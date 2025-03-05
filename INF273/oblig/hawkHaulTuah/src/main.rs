@@ -21,17 +21,18 @@ fn main() {
     info!("STARTEd");
     warn!("Start");
 
-    // run_random_report(filename);
-    // run_local_search_report(filename);
-    //for filename in filenames {
-    //    run_random_report(filename);
-    //}
+    // Run simulated annealing with our new greedy operator
     for filename in filenames {
         run_simmulated_annealing_report(filename, true, 0.8, 0.1);
     }
-    //for filename in filenames {
-    //    run_local_search_report(filename, true);
-    //}
+    
+    // Uncomment these to run other methods
+    // for filename in filenames {
+    //     run_local_search_report(filename, true);
+    // }
+    // for filename in filenames {
+    //     run_random_report(filename);
+    // }
 }
 
 fn run_simmulated_annealing_report(filename: &str, parallel: bool, prob: f64, t_final: f64) {
@@ -73,13 +74,13 @@ fn run_simmulated_annealing_report(filename: &str, parallel: bool, prob: f64, t_
     Avg cost: {}
     Improvement avg: {}%
     Improvement best: {}%
-    Solution:",
+    Solution: {:?}",
         total_time / 10,
         best_cost,
         avg_cost,
         improvement_avg,
         improvement_best,
-        //concat_solution(&best_solution)
+        concat_solution(&best_solution)
     );
 }
 
