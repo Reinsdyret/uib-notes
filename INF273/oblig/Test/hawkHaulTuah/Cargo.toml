@@ -1,0 +1,14 @@
+[package]
+name = "hawkHaulTuah"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+file_reader = { path = "./src/file_reader" }
+checker = { path =  "./src/checker" }
+random_meta = { path = "./src/random_meta" }
+local_search = { path = "./src/local_search" }
+simmulated_annealing = { path = "./src/simmulated_annealing" }
+rayon = "1.10"
+log = "0.4.25"
+env_logger = "0.11.6"
