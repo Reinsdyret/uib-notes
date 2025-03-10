@@ -3,8 +3,8 @@ use std::f64;
 use checker::checker::*;
 use file_reader::parse_data::Instance;
 use local_search::operators::*;
-use rand::{random, thread_rng, Rng};
 use rand::distributions::{Distribution, WeightedIndex};
+use rand::{random, thread_rng, Rng};
 
 // Function type for our operators
 pub type OperatorFn = fn(&Instance, &Vec<Vec<u32>>) -> Vec<Vec<u32>>;
@@ -13,14 +13,17 @@ pub type OperatorFn = fn(&Instance, &Vec<Vec<u32>>) -> Vec<Vec<u32>>;
 pub fn get_available_operators() -> Vec<(OperatorFn, &'static str)> {
     vec![
         (reinsert_sub_route as OperatorFn, "reinsert_sub_route"),
-        (one_reinsert_greedy_insert as OperatorFn, "one_reinsert_greedy_insert"),
+        (
+            one_reinsert_greedy_insert as OperatorFn,
+            "one_reinsert_greedy_insert",
+        ),
         (two_call_swap as OperatorFn, "two_call_swap_extended"),
     ]
 }
 
 // Default weights if none are provided
 pub fn get_default_weights() -> Vec<f64> {
-    vec![0.33,0.33,0.33]
+    vec![0.33, 0.33, 0.33]
 }
 
 pub fn run_sa(
@@ -32,7 +35,7 @@ pub fn run_sa(
     // Use default operators and weights
     let operators = get_available_operators();
     let weights = get_default_weights();
-    
+
     run_sa_with_operators(init_solution, instance, prob, t_final, &operators, &weights)
 }
 
@@ -45,9 +48,12 @@ pub fn run_sa_with_operators(
     weights: &[f64],
 ) -> (Vec<Vec<u32>>, u128) {
     // Verify that operators and weights have the same length
-    assert_eq!(operators.len(), weights.len(), 
-               "Number of operators must match number of weights");
-    
+    assert_eq!(
+        operators.len(),
+        weights.len(),
+        "Number of operators must match number of weights"
+    );
+
     // Create weighted distribution for operator selection
     let weight_dist = match WeightedIndex::new(weights) {
         Ok(dist) => dist,
@@ -56,7 +62,7 @@ pub fn run_sa_with_operators(
             panic!("Invalid weights provided for operators");
         }
     };
-    
+
     // Run warmup phase with the provided operators
     let (delta_avg, mut incumbent, mut best_solution) =
         find_avg_delta_with_operators(init_solution, instance, prob, operators, &weight_dist);
@@ -70,14 +76,14 @@ pub fn run_sa_with_operators(
     let mut best_cost = check_feasibility_and_get_cost(&instance, &best_solution).0;
     let mut incumbent_cost = check_feasibility_and_get_cost(&instance, &incumbent).0;
     let mut p: f64 = 0.9;
-    
+
     let mut rng = rand::thread_rng();
 
     for i in 1..9900 {
         // Select operator based on weights
         let op_idx = weight_dist.sample(&mut rng);
         let operator = operators[op_idx].0;
-        
+
         // Apply the selected operator
         new_solution = operator(&instance, &incumbent);
 
@@ -116,7 +122,7 @@ fn find_avg_delta(
     // Use default operators and weights
     let operators = get_available_operators();
     let weights = get_default_weights();
-    
+
     // Create weighted distribution for operator selection
     let weight_dist = match WeightedIndex::new(&weights) {
         Ok(dist) => dist,
@@ -125,7 +131,7 @@ fn find_avg_delta(
             panic!("Invalid weights provided for default operators");
         }
     };
-    
+
     find_avg_delta_with_operators(init_solution, instance, prob, &operators, &weight_dist)
 }
 
@@ -152,13 +158,13 @@ fn find_avg_delta_with_operators(
         // Select operator based on weights
         let op_idx = weight_dist.sample(&mut rng);
         let operator = operators[op_idx].0;
-        
+
         // Apply the selected operator
         new_solution = operator(&instance, &incumbent);
-        
+
         // Evaluate the new solution
         let (cost, feasible) = check_feasibility_and_get_cost(&instance, &new_solution);
-        delta_e = incumbent_cost as f64 - cost as f64;
+        delta_e = cost as f64 - incumbent_cost as f64;
 
         if feasible && delta_e < 0.0 {
             // Accept improving solutions
@@ -184,7 +190,7 @@ fn find_avg_delta_with_operators(
         // If no non-improving moves were found, use a default value
         return (0.1, incumbent, best_solution);
     }
-    
+
     (
         all_delta_e.iter().sum::<f64>() / all_delta_e.len() as f64,
         incumbent,
