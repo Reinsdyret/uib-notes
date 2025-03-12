@@ -164,7 +164,7 @@ fn find_avg_delta_with_operators(
 
         // Evaluate the new solution
         let (cost, feasible) = check_feasibility_and_get_cost(&instance, &new_solution);
-        delta_e = cost as f64 - incumbent_cost as f64;
+        delta_e = incumbent_cost as f64 - cost as f64;
 
         if feasible && delta_e < 0.0 {
             // Accept improving solutions
