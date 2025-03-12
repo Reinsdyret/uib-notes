@@ -133,7 +133,7 @@ pub fn one_reinsert_probability(old_route: &Vec<Vec<u32>>, instance: &Instance) 
     vehicle_to.insert(insert_idx1, call);
     vehicle_to.insert(insert_idx2, call);
 
-    return route;
+    route
 }
 
 pub fn one_reinsert_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
@@ -242,11 +242,11 @@ pub fn k_reinsert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32
         new_sol = one_reinsert_greedy_insert(&instance, &new_sol);
     }
 
-    return new_sol;
+    new_sol
 }
 
 pub fn actual_k_reinsert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = 3;
+    let k = instance.num_calls;
 
     let mut rng = rand::rng();
     let mut call_idx: usize;
@@ -380,7 +380,7 @@ pub fn reinsert_sub_route(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec
     // Only sample a subset of vehicles to improve performance
     let mut vehicle_indices: Vec<usize> = (0..old_route.len() - 1).collect(); // Skip outsource vehicle
     vehicle_indices.shuffle(&mut rng);
-    let vehicle_sample = &vehicle_indices[0..std::cmp::min(30, vehicle_indices.len())];
+    let vehicle_sample = &vehicle_indices[0..std::cmp::min(15, vehicle_indices.len())];
 
     // For each sampled vehicle, find valid subroutes
     for &vehicle_idx in vehicle_sample {
@@ -393,7 +393,7 @@ pub fn reinsert_sub_route(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec
         }
 
         // Find valid subroutes more efficiently
-        let max_subroute_length = std::cmp::min(30, vehicle.len());
+        let max_subroute_length = std::cmp::min(15, vehicle.len());
 
         for subroute_len in 2..=max_subroute_length {
             for start in 0..=vehicle.len() - subroute_len {

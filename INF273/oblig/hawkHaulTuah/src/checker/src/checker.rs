@@ -28,7 +28,7 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
             // One case for pickup
 
             if !loadings.contains_key(&(vehicle.index, *call_index)) {
-                info!("Call not compatible with vehicle");
+                // info!("Call not compatible with vehicle");
                 return (0, false);
             }
 
@@ -46,7 +46,7 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
                 time += travel.time;
 
                 if call.pickup_end < time {
-                    info!("Vehicle did not have time for pickup");
+                    // info!("Vehicle did not have time for pickup");
                     return (0, false);
                 }
 
@@ -57,7 +57,7 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
 
                 // Check if space and pickup package
                 if capacity < call.size {
-                    info!("Vehicle ran out of capacity");
+                    // info!("Vehicle ran out of capacity");
                     return (0, false);
                 }
                 capacity -= call.size;
@@ -77,7 +77,7 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
                 let call = &calls[(call_index - 1) as usize];
 
                 if call.delivery_end < time {
-                    info!("Vehicle did not have time for delivery");
+                    // info!("Vehicle did not have time for delivery");
                     return (0, false);
                 }
 
@@ -243,7 +243,7 @@ pub fn check_insertion_feasibility(
 
             // Check pickup time window
             if call.pickup_end < time {
-                info!("Vehicle was not in time for pickup for inserted call");
+                // info!("Vehicle was not in time for pickup for inserted call");
                 return (0, false);
             }
             if time < call.pickup_start {
@@ -252,7 +252,7 @@ pub fn check_insertion_feasibility(
 
             // Check capacity
             if capacity < call.size {
-                info!("Vehicle ran out of capacity after inserting call");
+                // info!("Vehicle ran out of capacity after inserting call");
                 return (0, false);
             }
             capacity -= call.size;
@@ -280,7 +280,7 @@ pub fn check_insertion_feasibility(
 
             // Check delivery time window
             if call.delivery_end < time {
-                info!("Vehicle was not in time for pickup for delivery call");
+                // info!("Vehicle was not in time for pickup for delivery call");
                 return (0, false);
             }
             if time < call.delivery_start {
@@ -319,7 +319,7 @@ pub fn check_insertion_feasibility(
 
                 // Check pickup time window
                 if current_call.pickup_end < time {
-                    info!("Vehicle was not in time for pickup after inserting call");
+                    // info!("Vehicle was not in time for pickup after inserting call");
                     return (0, false);
                 }
                 if time < current_call.pickup_start {
@@ -328,7 +328,7 @@ pub fn check_insertion_feasibility(
 
                 // Check capacity
                 if capacity < current_call.size {
-                    info!("Vehicle ran out of capacity after inserting call");
+                    // info!("Vehicle ran out of capacity after inserting call");
                     return (0, false);
                 }
                 capacity -= current_call.size;
@@ -345,7 +345,7 @@ pub fn check_insertion_feasibility(
 
                 // Check delivery time window
                 if current_call.delivery_end < time {
-                    info!("Vehicle was not in time for delivery after inserting call");
+                    // info!("Vehicle was not in time for delivery after inserting call");
                     return (0, false);
                 }
                 if time < current_call.delivery_start {
@@ -361,7 +361,7 @@ pub fn check_insertion_feasibility(
             }
         }
     }
-    info!("Found feasible insert");
+    // info!("Found feasible insert");
 
     (cost, true)
 }

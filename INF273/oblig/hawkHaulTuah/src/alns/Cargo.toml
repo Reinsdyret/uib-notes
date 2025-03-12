@@ -1,0 +1,16 @@
+[package]
+name = "alns"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+simmulated_annealing = { path = "../simmulated_annealing" }
+file_reader = { path = '../file_reader' }
+checker = { path = "../checker" }
+local_search = { path = "../local_search" }
+rand = "0.9.0"
+log = "0.4.25"
+
+[lib]
+name = "alns"
+path = "src/alns.rs"

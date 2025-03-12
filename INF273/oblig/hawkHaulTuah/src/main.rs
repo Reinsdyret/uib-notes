@@ -1,14 +1,12 @@
 use checker::checker::*;
 use file_reader::parse_data::*; // Import read_file function
-use local_search::operators::{
-    actual_k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts,
-    two_call_swap,
-};
+use local_search::operators::{actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts, two_call_swap};
 use local_search::{local_search::*, operators};
 use log::{debug, error, info, log_enabled, warn, Level};
 use random_meta::random::*;
 use rayon::prelude::*;
 use simmulated_annealing::simmulated_annealing::*;
+use alns::alns_general;
 use std::time::Duration;
 use std::time::Instant;
 use std::{u128, u32};
@@ -34,25 +32,38 @@ fn main() {
     //     tune_weights(filename, 0.1);
     // }
     //
+    // let my_operators = vec![
+    //     (reinsert_sub_route as OperatorFn, "reinsert_sub_route"),
+    //     (
+    //         actual_k_reinsert as OperatorFn,
+    //         "one_reinsert_greedy_insert",
+    //     ),
+    //     (two_call_swap as OperatorFn, "two_call_swap_extended"),
+    // ];
+    // let op_weights = vec![0.2, 0.5, 0.3];
+    // for filename in filenames {
+    //     run_simmulated_annealing_report_with_operators_and_weights(
+    //         filename,
+    //         true,
+    //         0.8,
+    //         0.1,
+    //         &my_operators,
+    //         &op_weights,
+    //     );
+    // }
+
     let my_operators = vec![
-        (reinsert_sub_route as OperatorFn, "reinsert_sub_route"),
-        (
-            actual_k_reinsert as OperatorFn,
-            "one_reinsert_greedy_insert",
-        ),
-        (two_call_swap as OperatorFn, "two_call_swap_extended"),
+        reinsert_sub_route as OperatorFn,
+        k_reinsert as OperatorFn,
+        two_call_swap as OperatorFn
     ];
-    let op_weights = vec![0.2, 0.5, 0.3];
-    for filename in filenames {
-        run_simmulated_annealing_report_with_operators_and_weights(
-            filename,
-            true,
-            0.8,
-            0.1,
-            &my_operators,
-            &op_weights,
-        );
-    }
+
+    let filename = "src/data/Call_35_Vehicle_7.txt";
+
+    run_alns_repost(filename, true, &my_operators);
+    // for filename in filenames {
+    //
+    // }
 
     // for filename in filenames {
     //     run_local_search_report(filename, true);
@@ -60,6 +71,60 @@ fn main() {
     // for filename in filenames {
     //     run_random_report(filename);
     // }
+}
+
+fn run_alns_repost(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) {
+    let instance = read_file(filename);
+    let outsource_sol = get_init_solution(instance.num_calls, instance.num_vehicles);
+
+    let results: Vec<(Vec<Vec<u32>>, u128,Vec<Vec<f64>>)>;
+    let now = Instant::now();
+    if parallel {
+        results = (0..1)
+            .into_par_iter()
+            .map(|_| {
+                alns_general(&instance, &operators)
+            })
+            .collect()
+    } else {
+        results = (0..1)
+            .map(|_| {
+                alns_general(&instance, &operators)
+            })
+            .collect();
+    }
+
+
+    let total_time = Instant::now().duration_since(now).as_millis();
+    let total_sum: u128 = results.iter().map(|(_, cost,_)| *cost).sum();
+
+    let (best_solution, best_cost, weights_history) = results.iter().min_by_key(|(_, cost,_)| *cost).unwrap();
+    // for w in weights_history {
+    //     println!("{:?}", w);
+    // }
+    let init_cost = check_feasibility_and_get_cost(&instance, &outsource_sol).0;
+    let avg_cost = total_sum / 10;
+    let diff_avg = init_cost - avg_cost;
+    let improvement_avg: f64 = (diff_avg as f64 / init_cost as f64) * 100.0;
+    let diff_best = init_cost - best_cost;
+    let improvement_best: f64 = (diff_best as f64 / init_cost as f64) * 100.0;
+
+
+    println!(
+        "Ran ALNS with custom operators. {filename}
+    Avg time taken: {}ms
+    Best cost: {}
+    Avg cost: {}
+    Improvement avg: {:.2}%
+    Improvement best: {:.2}%
+    Solution: ",
+        total_time / 10,
+        best_cost,
+        avg_cost,
+        improvement_avg,
+        improvement_best,
+        //concat_solution(&best_solution)
+    );
 }
 
 fn run_simmulated_annealing_report(filename: &str, parallel: bool, prob: f64, t_final: f64) {

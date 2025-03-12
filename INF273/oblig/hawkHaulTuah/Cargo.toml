@@ -9,6 +9,7 @@ checker = { path =  "./src/checker" }
 random_meta = { path = "./src/random_meta" }
 local_search = { path = "./src/local_search" }
 simmulated_annealing = { path = "./src/simmulated_annealing" }
+alns = { path = "./src/alns" }
 rayon = "1.10"
 log = "0.4.25"
 env_logger = "0.11.6"
