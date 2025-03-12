@@ -1,5 +1,6 @@
 #include "mt19937-64.c"
 #include <iostream>
+#include <cstring>
 #include <vector>
 #include <cmath>
 #include <omp.h>
@@ -19,8 +20,8 @@ int main (int argc, char *argv[]) {
   cout << "B: ";
   cin >> b;
 
-  if (b < 0 || (b & (b - 1)) != 0) {
-    cout << "Invalid B, please only give B that is a power of 2.";
+  if (b < 0) {
+    cout << "Invalid B, please only give B that is larger than 0.";
     return 0;
   }
 
@@ -63,7 +64,7 @@ int main (int argc, char *argv[]) {
 }
 
 void radix_sort(vector<unsigned long long>& arr, int n, int b, vector<int>& count, vector<unsigned long long>& output) {
-    int num_passes = (64 + b - 1) / b;
+  int num_passes = (64 + b - 1) / b; 
     
     double fill_time = 0, count_time = 0, prefix_time = 0, output_time = 0, copyback_time = 0;
 
@@ -87,12 +88,12 @@ void counting_sort(vector<unsigned long long>& arr, int n, int exp, int b, vecto
     double before;
 
     before = omp_get_wtime();
-    fill(count.begin(), count.end(), 0);
+    memset(count.data(), 0, count.size() * sizeof(int));
     fill_time += omp_get_wtime() - before;
     
     before = omp_get_wtime();
     for (int i = 0; i < n; i++) {
-        unsigned long long digit = (arr[i] >> exp) & ((1ULL << b) - 1);
+        auto digit = (arr[i] >> exp) & ((1ULL << b) - 1);
         count[digit]++;
     }
     count_time += omp_get_wtime() - before;
@@ -105,15 +106,13 @@ void counting_sort(vector<unsigned long long>& arr, int n, int exp, int b, vecto
     
     before = omp_get_wtime();
     for (int i = n - 1; i >= 0; i--) {
-        unsigned long long digit = (arr[i] >> exp) & ((1ULL << b) - 1);
-        output[count[digit] - 1] = arr[i];
+        auto digit = (arr[i] >> exp) & ((1ULL << b) - 1);
         count[digit]--;
+        output[count[digit]] = arr[i];
     }
     output_time += omp_get_wtime() - before;
     
     before = omp_get_wtime();
-    for (int i = 0; i < n; i++) {
-        arr[i] = output[i];
-    }
+    swap(arr, output);
     copyback_time += omp_get_wtime() - before;
 }
