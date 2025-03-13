@@ -19,9 +19,9 @@ plt.figure(figsize=(10, 6))
 # plt.plot(x, y2, label='Line 2', color='red')
 # plt.plot(x, y3, label='Line 3', color='green')
 y = []
-with open('output.txt', 'r', encoding = 'utf-16')  as f:
+with open('output.txt', 'r')  as f:
     line = f.readline()
-    y.extend(map(int, line.strip().split(',')))
+    y.extend(map(int, line.strip()[:-1].split(',')))
 
 print(min(y))
 

@@ -1,12 +1,15 @@
+use alns::alns_general;
 use checker::checker::*;
 use file_reader::parse_data::*; // Import read_file function
-use local_search::operators::{actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts, two_call_swap};
+use local_search::operators::{
+    actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts,
+    two_call_swap,random_removal_greedy_insert, worst_removal_greedy_insert
+};
 use local_search::{local_search::*, operators};
 use log::{debug, error, info, log_enabled, warn, Level};
 use random_meta::random::*;
 use rayon::prelude::*;
 use simmulated_annealing::simmulated_annealing::*;
-use alns::alns_general;
 use std::time::Duration;
 use std::time::Instant;
 use std::{u128, u32};
@@ -54,16 +57,13 @@ fn main() {
 
     let my_operators = vec![
         reinsert_sub_route as OperatorFn,
-        k_reinsert as OperatorFn,
-        two_call_swap as OperatorFn
+        worst_removal_greedy_insert as OperatorFn,
+        two_call_swap as OperatorFn,
     ];
 
-    let filename = "src/data/Call_35_Vehicle_7.txt";
-
-    run_alns_repost(filename, true, &my_operators);
-    // for filename in filenames {
-    //
-    // }
+    for filename in filenames {
+        run_alns_report(filename, true, &my_operators);
+    }
 
     // for filename in filenames {
     //     run_local_search_report(filename, true);
@@ -73,32 +73,28 @@ fn main() {
     // }
 }
 
-fn run_alns_repost(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) {
+fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) {
     let instance = read_file(filename);
     let outsource_sol = get_init_solution(instance.num_calls, instance.num_vehicles);
 
-    let results: Vec<(Vec<Vec<u32>>, u128,Vec<Vec<f64>>)>;
+    let results: Vec<(Vec<Vec<u32>>, u128, Vec<Vec<f64>>)>;
     let now = Instant::now();
     if parallel {
-        results = (0..1)
+        results = (0..10)
             .into_par_iter()
-            .map(|_| {
-                alns_general(&instance, &operators)
-            })
+            .map(|_| alns_general(&instance, &operators))
             .collect()
     } else {
         results = (0..1)
-            .map(|_| {
-                alns_general(&instance, &operators)
-            })
+            .map(|_| alns_general(&instance, &operators))
             .collect();
     }
 
-
     let total_time = Instant::now().duration_since(now).as_millis();
-    let total_sum: u128 = results.iter().map(|(_, cost,_)| *cost).sum();
+    let total_sum: u128 = results.iter().map(|(_, cost, _)| *cost).sum();
 
-    let (best_solution, best_cost, weights_history) = results.iter().min_by_key(|(_, cost,_)| *cost).unwrap();
+    let (best_solution, best_cost, weights_history) =
+        results.iter().min_by_key(|(_, cost, _)| *cost).unwrap();
     // for w in weights_history {
     //     println!("{:?}", w);
     // }
@@ -108,7 +104,6 @@ fn run_alns_repost(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
     let improvement_avg: f64 = (diff_avg as f64 / init_cost as f64) * 100.0;
     let diff_best = init_cost - best_cost;
     let improvement_best: f64 = (diff_best as f64 / init_cost as f64) * 100.0;
-
 
     println!(
         "Ran ALNS with custom operators. {filename}

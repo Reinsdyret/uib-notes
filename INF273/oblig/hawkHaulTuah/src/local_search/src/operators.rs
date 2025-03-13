@@ -628,6 +628,154 @@ pub fn two_call_swap(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<
     best_route
 }
 
+/*
+========================================================
+------------------- DESTROY OPERATORS ------------------
+========================================================
+*/
+
+fn random_removal(old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
+    let mut rng = rand::rng();
+    let k = 3;
+    let mut removed_calls = Vec::new();
+    let mut new_route = old_route.clone();
+
+    for _i in 0..k {
+        let vehicle_idx = get_random_vehicle(&new_route, true);
+        let call_idx = rng.random_range(0..new_route[vehicle_idx].len());
+        let call = remove_call_from_vehicle(call_idx, vehicle_idx, &mut new_route);
+        removed_calls.push(call);
+    }
+
+    (new_route, removed_calls)
+}
+
+fn worst_removal(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
+    let mut removed_calls = Vec::new();
+    let mut new_route = old_route.clone();
+    let k = 2;
+
+    for _i in 0..k {
+        let (vehicle_idx, call_idx) = find_most_costly_call(instance, &new_route);
+        let call = remove_call_from_vehicle(call_idx, vehicle_idx, &mut new_route);
+        removed_calls.push(call);
+    }
+
+    (new_route, removed_calls)
+}
+
+/*
+========================================================
+------------------- REPAIR OPERATORS -------------------
+========================================================
+*/
+
+fn greedy_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>) -> Vec<Vec<u32>> {
+    let mut new_route = old_route.clone();
+
+    for call in calls_to_insert {
+        new_route = insert_best_position(&instance, &new_route, call);
+    }
+
+    new_route
+}
+
+
+/*
+========================================================
+------------- DESTROY AND REPAIR OPERATORS -------------
+========================================================
+*/
+
+pub fn random_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let (new_route, calls) = random_removal(&old_route);
+
+    let new_route = greedy_insertion(&instance, &new_route, calls);
+
+    new_route
+}
+
+pub fn worst_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let (new_route, calls) = worst_removal(&instance, &old_route);
+
+    let new_route = greedy_insertion(&instance, &new_route, calls);
+
+    new_route
+}
+
+
+fn find_most_costly_call(instance: &Instance, route: &Vec<Vec<u32>>) -> (usize, usize) {
+    let mut most_costly_vehicle_idx = 0;
+    let mut most_costly_call_idx = 0;
+    let mut highest_delta = 0;
+
+    for vehicle_idx in 0..route.len() - 1 {
+        let vehicle = &instance.vehicles[vehicle_idx];
+        for call_idx in 0..route[vehicle_idx].len() {
+            let call = route[vehicle_idx][call_idx];
+            let actual_call = &instance.calls[(call - 1) as usize];
+
+            // Get current node for call
+            let current_node = if route[vehicle_idx][0..call_idx].contains(&call) {
+                actual_call.destination
+            } else {
+                actual_call.origin
+            };
+
+            // Get node of previous call
+            let prev_node = if call_idx == 0 {
+                vehicle.home_node
+            } else {
+                let prev_call = route[vehicle_idx][call_idx - 1];
+                let actual_call = &instance.calls[(prev_call - 1) as usize];
+                if route[vehicle_idx][0..call_idx-1].contains(&prev_call) {
+                    actual_call.destination
+                } else {
+                    actual_call.origin
+                }
+            };
+
+            // Get node of next call
+            let next_node = if call_idx == route[vehicle_idx].len() - 1 {
+                vehicle.home_node
+            } else {
+                let next_call = route[vehicle_idx][call_idx + 1];
+                let actual_call = &instance.calls[(next_call - 1) as usize];
+                if route[vehicle_idx][0..call_idx+1].contains(&next_call) {
+                    actual_call.destination
+                } else {
+                    actual_call.origin
+                }
+            };
+
+            // Calculate delta cost with and without traveling to current call
+            let travel_prev_call = instance.travels[&(vehicle.index, prev_node, current_node)].cost;
+            let travel_call_next = instance.travels[&(vehicle.index, current_node, next_node)].cost;
+            let travel_prev_next = instance.travels[&(vehicle.index, prev_node, next_node)].cost;
+
+            let delta = travel_prev_call + travel_call_next - travel_prev_next;
+
+
+            if delta > highest_delta {
+                highest_delta = delta;
+                most_costly_call_idx = call_idx;
+                most_costly_vehicle_idx = vehicle_idx;
+            }
+        }
+    }
+
+    for (call_idx, call) in route[route.len() - 1].iter().enumerate() {
+        let actual_call = &instance.calls[(call - 1) as usize];
+        if actual_call.cost_outsource > highest_delta {
+            most_costly_call_idx = call_idx;
+            highest_delta = actual_call.cost_outsource;
+            most_costly_vehicle_idx = route.len() - 1;
+        }
+    }
+
+    (most_costly_vehicle_idx, most_costly_call_idx)
+}
+
 fn get_random_compatible_vehicle(call: u32, instance: &Instance, include_outsource: bool) -> u32 {
     let mut rng = rand::rng();
     let max_vehicle = if include_outsource {
