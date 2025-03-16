@@ -20,7 +20,7 @@ plt.figure(figsize=(10, 6))
 # plt.plot(x, y3, label='Line 3', color='green')
 y1 = []
 y2 = []
-with open('output.txt', 'r', encoding='utf-16')  as f:
+with open('output.txt', 'r')  as f:
     line = f.readline()
     vals = line.strip()[:-1].split(',')
     y1 = list(map(int, vals))[1000:]

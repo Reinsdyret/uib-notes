@@ -758,7 +758,19 @@ pub fn route_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>
 pub fn random_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     let (new_route, calls) = random_removal(&old_route);
 
-    k_regret_insertion(&instance, &new_route, calls, 2)
+    k_regret_insertion(&instance, &new_route, calls, 3)
+}
+
+pub fn worst_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let (new_route, calls) = worst_removal(&instance, &old_route);
+
+    k_regret_insertion(&instance, &new_route, calls, 3)
+}
+
+pub fn route_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let (new_route, calls) = route_removal(&instance, &old_route);
+
+    k_regret_insertion(&instance, &new_route, calls, 3)
 }
 
 

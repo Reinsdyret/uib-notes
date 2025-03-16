@@ -30,33 +30,40 @@ pub fn alns_general(
     let mut best_history: Vec<u128> = Vec::new();
     let mut incumbent_history: Vec<u128> = Vec::new();
 
-    let r = 0.2;
+    let mut r = 0.3;
     let mut iterations_since_improvement = 0;
     let mut iterations = 0;
     let max_iterations = 24900;
     let escape_condition = 200;
-    let mut escape_size = 100;
-    let segment_size = 100;
+    let mut escape_size = 20;
+    let segment_size = 300;
     let mut operator_use_counts = vec![0; operators.len()];
     let mut operator_points = vec![0; operators.len()];
 
     // Warmup or find avg delta for temperature for sa like acceptance criteria
     (delta_e_avg, incumbent, best_sol) = find_avg_delta_with_operators(&incumbent, &instance, 0.8, &operators, &dist);
     let t_zero = (-1.0 * delta_e_avg) / (0.8f64).ln();
-    let t_final = 0.1;
+    let t_final = 0.5;
     let alpha = f64::powf(t_final / t_zero, 1.0 / 24900.0);
     let mut temp = t_zero;
     let mut p: f64 = 0.9;
     let mut delta_e: f64;
 
     while iterations < max_iterations {
+        r = 0.3 * (1.0 - iterations as f64 / max_iterations as f64);
         best_history.push(best_cost);
         weights_history.push(weights.clone());
         incumbent_history.push(incumbent_cost);
         iterations += 1;
 
+        if iterations_since_improvement > escape_condition * 3 {
+            incumbent = best_sol.clone();
+            incumbent_cost = best_cost;
+            iterations_since_improvement = 0;
+        }
+
         // Escape if reached escape conditions
-        if iterations_since_improvement > escape_condition {
+        if iterations_since_improvement >= escape_condition {
             let operator = operators[dist.sample(&mut rng)];
             incumbent = escape(&instance, &incumbent, &operator, best_cost, escape_size);
             escape_size += 1;
@@ -66,6 +73,8 @@ pub fn alns_general(
                 best_cost = incumbent_cost;
                 best_sol = incumbent.clone();
                 iterations_since_improvement = 0
+            } else {
+                escape_size = (escape_size as f64 * 1.5) as usize;
             }
         }
 
@@ -96,15 +105,27 @@ pub fn alns_general(
                 incumbent_cost = new_solution_cost;
 
                 if incumbent_cost < best_cost {
+                    // Significant improvement - new best solution
+                    let improvement = best_cost - incumbent_cost;
+                    let improvement_percentage = improvement as f64 / best_cost as f64;
+
+                    // Scale points based on improvement size
+                    if improvement_percentage > 0.05 { // >5% improvement
+                        operator_points[operator_index] += 10;
+                    } else if improvement_percentage > 0.01 { // >1% improvement
+                        operator_points[operator_index] += 6;
+                    } else {
+                        operator_points[operator_index] += 4; // Minor improvement
+                    }
+
                     best_cost = incumbent_cost;
                     best_sol = incumbent.clone();
-                    operator_points[operator_index] += 4;
                 } else {
                     operator_points[operator_index] += 2;
                 }
             } else if random::<f64>() < p {
                 incumbent = new_solution;
-                incumbent_cost = incumbent_cost;
+                incumbent_cost = new_solution_cost;
             }
         }
 
@@ -143,14 +164,14 @@ pub fn alns_general(
             }
         }
     }
-
+    /*
     for c in best_history {
         print!("{},", c);
     }
     println!();
     for c in incumbent_history {
         print!("{},", c);
-    }
+    }*/
     (best_sol, best_cost, weights_history)
 }
 
@@ -173,7 +194,7 @@ fn escape(
         end_solution = new;
 
         if cost < best_cost {
-            return end_solution;
+            break;
         }
     }
 
