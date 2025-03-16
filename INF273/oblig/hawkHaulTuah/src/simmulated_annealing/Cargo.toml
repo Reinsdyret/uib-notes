@@ -12,4 +12,4 @@ path = "src/lib.rs"
 local_search = { path = "../local_search" }
 file_reader = { path = "../file_reader" }
 checker = { path =  "../checker" }
-rand = "0.8"
+rand = "0.9.0"

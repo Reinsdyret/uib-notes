@@ -24,7 +24,7 @@ pub fn run_local_search(
 
     for _i in 0..10_000 {
         // let new_solution = one_reinsert_random(&best_solution);
-        let new_solution = one_reinsert_focus_dummy_random_feasible(&best_solution, instance);
+        let new_solution = one_reinsert_focus_dummy_random_feasible(instance,&best_solution);
 
         let (cost, feasible) = check_feasibility_and_get_cost(instance, &new_solution);
 
@@ -53,7 +53,7 @@ pub fn run_local_search_parallel(
             best_solution_lock.clone()
         };
 
-        let new_solution = one_reinsert_focus_dummy_random_feasible(&current_solution, instance);
+        let new_solution = one_reinsert_focus_dummy_random_feasible(instance,&current_solution);
         // let new_solution = one_reinsert_random(&current_solution);
         let (cost, feasible) = check_feasibility_and_get_cost(instance, &new_solution);
 

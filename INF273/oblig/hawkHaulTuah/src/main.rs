@@ -1,10 +1,7 @@
 use alns::alns_general;
 use checker::checker::*;
 use file_reader::parse_data::*; // Import read_file function
-use local_search::operators::{
-    actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts,
-    two_call_swap,random_removal_greedy_insert, worst_removal_greedy_insert
-};
+use local_search::operators::{actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts, two_call_swap, random_removal_greedy_insert, worst_removal_greedy_insert, one_reinsert_focus_dummy_random_feasible};
 use local_search::{local_search::*, operators};
 use log::{debug, error, info, log_enabled, warn, Level};
 use random_meta::random::*;
@@ -19,9 +16,9 @@ fn main() {
         "src/data/Call_7_Vehicle_3.txt",
         "src/data/Call_18_Vehicle_5.txt",
         "src/data/Call_35_Vehicle_7.txt",
-        "src/data/Call_80_Vehicle_20.txt",
-        "src/data/Call_130_Vehicle_40.txt",
-        "src/data/Call_300_Vehicle_90.txt",
+        // "src/data/Call_80_Vehicle_20.txt",
+        // "src/data/Call_130_Vehicle_40.txt",
+        // "src/data/Call_300_Vehicle_90.txt",
     ];
     env_logger::init();
     info!("STARTEd");
@@ -56,9 +53,9 @@ fn main() {
     // }
 
     let my_operators = vec![
-        reinsert_sub_route as OperatorFn,
-        worst_removal_greedy_insert as OperatorFn,
         two_call_swap as OperatorFn,
+        k_reinsert as OperatorFn,
+        random_removal_greedy_insert as OperatorFn,
     ];
 
     for filename in filenames {
@@ -89,6 +86,7 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
             .map(|_| alns_general(&instance, &operators))
             .collect();
     }
+    println!();
 
     let total_time = Instant::now().duration_since(now).as_millis();
     let total_sum: u128 = results.iter().map(|(_, cost, _)| *cost).sum();
@@ -188,7 +186,7 @@ fn run_simmulated_annealing_report_with_operators_and_weights(
     parallel: bool,
     prob: f64,
     t_final: f64,
-    operators: &[(OperatorFn, &'static str)],
+    operators: &[OperatorFn],
     weights: &[f64],
 ) {
     let instance = read_file(filename);
@@ -232,22 +230,14 @@ fn run_simmulated_annealing_report_with_operators_and_weights(
     let diff_best = init_cost - best_cost;
     let improvement_best: f64 = (diff_best as f64 / init_cost as f64) * 100.0;
 
-    // Format the weights for display
-    let weight_display: Vec<String> = operators
-        .iter()
-        .zip(weights.iter())
-        .map(|((_, name), weight)| format!("{}: {:.2}", name, weight))
-        .collect();
-
     println!(
-        "Ran simulated annealing with custom operators and weights [{}]. {filename}
+        "Ran simulated annealing with custom operators and weights. {filename}
     Avg time taken: {}ms
     Best cost: {}
     Avg cost: {}
     Improvement avg: {}%
     Improvement best: {}%
     Solution: {:?}",
-        weight_display.join(", "),
         total_time / 10,
         best_cost,
         avg_cost,
@@ -386,14 +376,6 @@ fn tune_weights(filename: &str, step_size: f64) {
 
             let weights = vec![w1, w2, w3];
 
-            // Display the weight configuration
-            let weight_display: Vec<String> = operators
-                .iter()
-                .zip(weights.iter())
-                .map(|((_, name), weight)| format!("{}: {:.2}", name, weight))
-                .collect();
-            println!("\nTesting weights: [{}]", weight_display.join(", "));
-
             // Run SA with these weights
             let (_, cost) = run_sa_with_operators(
                 &outsource_sol,
@@ -417,28 +399,16 @@ fn tune_weights(filename: &str, step_size: f64) {
 
     println!("\n======= WEIGHT TUNING RESULTS (TOP 10) =======");
     for (i, (weights, cost)) in results.iter().take(10).enumerate() {
-        let weight_display: Vec<String> = operators
-            .iter()
-            .zip(weights.iter())
-            .map(|((_, name), weight)| format!("{}: {:.2}", name, weight))
-            .collect();
         println!(
-            "{}. Cost: {}, Weights: [{}]",
+            "{}. Cost: {}",
             i + 1,
             cost,
-            weight_display.join(", ")
         );
     }
 
     // Recommend the best configuration
     println!("\nRECOMMENDED WEIGHT CONFIGURATION:");
     let best_weights = &results[0].0;
-    let weight_display: Vec<String> = operators
-        .iter()
-        .zip(best_weights.iter())
-        .map(|((_, name), weight)| format!("{}: {:.2}", name, weight))
-        .collect();
-    println!("Weights: [{}]", weight_display.join(", "));
     println!("Best cost: {}", results[0].1);
 }
 

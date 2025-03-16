@@ -3,21 +3,19 @@ use std::f64;
 use checker::checker::*;
 use file_reader::parse_data::Instance;
 use local_search::operators::*;
-use rand::distributions::{Distribution, WeightedIndex};
+use rand::distr::weighted::WeightedIndex;
+use rand::distr::Distribution;
 use rand::{random, thread_rng, Rng};
 
 // Function type for our operators
 pub type OperatorFn = fn(&Instance, &Vec<Vec<u32>>) -> Vec<Vec<u32>>;
 
 // Define the available operators
-pub fn get_available_operators() -> Vec<(OperatorFn, &'static str)> {
+pub fn get_available_operators() -> Vec<OperatorFn> {
     vec![
-        (reinsert_sub_route as OperatorFn, "reinsert_sub_route"),
-        (
-            one_reinsert_greedy_insert as OperatorFn,
-            "one_reinsert_greedy_insert",
-        ),
-        (two_call_swap as OperatorFn, "two_call_swap_extended"),
+        reinsert_sub_route as OperatorFn,
+        one_reinsert_greedy_insert as OperatorFn,
+        two_call_swap as OperatorFn
     ]
 }
 
@@ -44,7 +42,7 @@ pub fn run_sa_with_operators(
     instance: &Instance,
     prob: f64,
     t_final: f64,
-    operators: &[(OperatorFn, &'static str)],
+    operators: &[OperatorFn],
     weights: &[f64],
 ) -> (Vec<Vec<u32>>, u128) {
     // Verify that operators and weights have the same length
@@ -82,7 +80,7 @@ pub fn run_sa_with_operators(
     for i in 1..9900 {
         // Select operator based on weights
         let op_idx = weight_dist.sample(&mut rng);
-        let operator = operators[op_idx].0;
+        let operator = operators[op_idx];
 
         // Apply the selected operator
         new_solution = operator(&instance, &incumbent);
@@ -135,11 +133,11 @@ fn find_avg_delta(
     find_avg_delta_with_operators(init_solution, instance, prob, &operators, &weight_dist)
 }
 
-fn find_avg_delta_with_operators(
+pub fn find_avg_delta_with_operators(
     init_solution: &Vec<Vec<u32>>,
     instance: &Instance,
     prob: f64,
-    operators: &[(OperatorFn, &'static str)],
+    operators: &[OperatorFn],
     weight_dist: &WeightedIndex<f64>,
 ) -> (f64, Vec<Vec<u32>>, Vec<Vec<u32>>) {
     let mut incumbent: Vec<Vec<u32>> = Vec::with_capacity(init_solution.len());
@@ -157,7 +155,7 @@ fn find_avg_delta_with_operators(
     for _w in 1..=100 {
         // Select operator based on weights
         let op_idx = weight_dist.sample(&mut rng);
-        let operator = operators[op_idx].0;
+        let operator = operators[op_idx];
 
         // Apply the selected operator
         new_solution = operator(&instance, &incumbent);

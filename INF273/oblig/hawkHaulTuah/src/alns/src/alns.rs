@@ -4,8 +4,9 @@ use local_search::operators::*;
 use log::info;
 use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
-use simmulated_annealing::simmulated_annealing::OperatorFn;
+use simmulated_annealing::simmulated_annealing::{OperatorFn, find_avg_delta_with_operators};
 use std::collections::HashSet;
+use rand::random;
 
 pub fn alns_general(
     instance: &Instance,
@@ -18,6 +19,7 @@ pub fn alns_general(
     let mut new_solution: Vec<Vec<u32>>;
     let mut new_solution_cost;
     let mut feasibility;
+    let delta_e_avg: f64;
     let mut seen_solutions: HashSet<Vec<Vec<u32>>> = HashSet::new();
 
     let mut weights: Vec<f64> = vec![1.0 / operators.len() as f64; operators.len()];
@@ -30,12 +32,21 @@ pub fn alns_general(
     let r = 0.15;
     let mut iterations_since_improvement = 0;
     let mut iterations = 0;
-    let max_iterations = 25000;
-    let escape_condition = 500;
-    let mut escape_size = 10;
+    let max_iterations = 24900;
+    let escape_condition = 1000;
+    let mut escape_size = 100;
     let segment_size = 100;
     let mut operator_use_counts = vec![0; operators.len()];
     let mut operator_points = vec![0; operators.len()];
+
+    // Warmup or find avg delta for temperature for sa like acceptance criteria
+    (delta_e_avg, incumbent, best_sol) = find_avg_delta_with_operators(&incumbent, &instance, 0.8, &operators, &dist);
+    let t_zero = (-1.0 * delta_e_avg) / (0.8f64).ln();
+    let t_final = 0.1;
+    let alpha = f64::powf(t_final / t_zero, 1.0 / 24900.0);
+    let mut temp = t_zero;
+    let mut p: f64 = 0.9;
+    let mut delta_e: f64;
 
     while iterations < max_iterations {
         best_history.push(best_cost);
@@ -63,41 +74,40 @@ pub fn alns_general(
         let operator = operators[operator_index];
         operator_use_counts[operator_index] += 1;
 
+
         // Apply operator
         new_solution = operator(&instance, &new_solution);
         (new_solution_cost, feasibility) = check_feasibility_and_get_cost(&instance, &new_solution);
+        delta_e = new_solution_cost as f64 - incumbent_cost as f64;
+
+        p = std::f64::consts::E.powf((-1.0 * delta_e) / temp);
 
         if feasibility {
-            // Save best seen solution
-            if new_solution_cost < best_cost {
-                best_cost = new_solution_cost;
-                best_sol = new_solution.clone();
-                incumbent_cost = new_solution_cost;
-                incumbent = new_solution.clone();
-                iterations_since_improvement = 0;
-                operator_points[operator_index] += 4;
-            }
-            // Acceptance criteria
-            else if new_solution_cost < incumbent_cost
-                || rng.random::<f64>()
-                    < (max_iterations as f64 - iterations as f64) / max_iterations as f64
-            {
-                if new_solution_cost < incumbent_cost {
-                    iterations_since_improvement = 0;
-                }
-                incumbent_cost = new_solution_cost;
-                incumbent = new_solution.clone();
-                operator_points[operator_index] += 2;
-                iterations_since_improvement += 1;
-            }
-            // Points for detecting a new solution
-            else if !seen_solutions.contains(&new_solution) {
+            if !seen_solutions.contains(&new_solution) {
                 seen_solutions.insert(new_solution.clone());
                 operator_points[operator_index] += 1;
-                iterations_since_improvement += 1;
             }
-            seen_solutions.insert(new_solution.clone());
+
+            if delta_e < 0.0 {
+                iterations_since_improvement = 0;
+
+                incumbent = new_solution;
+                incumbent_cost = new_solution_cost;
+
+                if incumbent_cost < best_cost {
+                    best_cost = incumbent_cost;
+                    best_sol = incumbent.clone();
+                    operator_points[operator_index] += 4;
+                } else {
+                    operator_points[operator_index] += 2;
+                }
+            } else if random::<f64>() < p {
+                incumbent = new_solution;
+                incumbent_cost = incumbent_cost;
+            }
         }
+
+        temp = temp * alpha;
 
         if iterations % segment_size == 0 {
             // Update weights and counts

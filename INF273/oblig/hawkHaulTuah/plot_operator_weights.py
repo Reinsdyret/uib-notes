@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-x = [a for a in range(25000)]
+x = [a for a in range(24900)]
 # y1 = []
 # y2 = []
 # y3 = []
@@ -18,14 +18,17 @@ plt.figure(figsize=(10, 6))
 # plt.plot(x, y1, label='Line 1', color='blue')
 # plt.plot(x, y2, label='Line 2', color='red')
 # plt.plot(x, y3, label='Line 3', color='green')
-y = []
-with open('output.txt', 'r')  as f:
-    line = f.readline()
-    y.extend(map(int, line.strip()[:-1].split(',')))
+ys = []
+with open('output.txt', 'r', encoding='utf-16')  as f:
 
-print(min(y))
+    for line in f.readlines():
+        vals = line.strip()[:-1].split(',')
+        ys.append(list(map(int, vals)))
 
-plt.plot(x,y)
+
+for y in ys:
+    print(min(y))
+    plt.plot(x,y)
 # Add labels and a legend
 plt.xlabel('X-axis')
 plt.ylabel('Y-axis')

@@ -8,8 +8,8 @@ use rand::distr::weighted::WeightedIndex;
 use rand::{prelude::*, rng};
 
 pub fn one_reinsert_focus_dummy_random_feasible(
-    old_route: &Vec<Vec<u32>>,
     instance: &Instance,
+    old_route: &Vec<Vec<u32>>
 ) -> Vec<Vec<u32>> {
     let mut rng = rand::rng();
     let call: u32;
@@ -44,7 +44,7 @@ pub fn one_reinsert_focus_dummy_random_feasible(
     } else {
         loop {
             // Find random but compatible vehicle
-            vehicle_to_idx = get_random_compatible_vehicle(call, &instance, include_outsource);
+            vehicle_to_idx = get_random_compatible_vehicle(call, &instance, false);
             vehicle_to = route[vehicle_to_idx as usize].clone();
 
             // Insert calls in random position
