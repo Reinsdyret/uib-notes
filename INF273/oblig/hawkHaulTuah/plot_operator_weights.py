@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-x = [a for a in range(24900)]
+x = [a for a in range(1000, 24900)]
 # y1 = []
 # y2 = []
 # y3 = []
@@ -18,17 +18,21 @@ plt.figure(figsize=(10, 6))
 # plt.plot(x, y1, label='Line 1', color='blue')
 # plt.plot(x, y2, label='Line 2', color='red')
 # plt.plot(x, y3, label='Line 3', color='green')
-ys = []
+y1 = []
+y2 = []
 with open('output.txt', 'r', encoding='utf-16')  as f:
+    line = f.readline()
+    vals = line.strip()[:-1].split(',')
+    y1 = list(map(int, vals))[1000:]
+    line = f.readline()
+    vals = line.strip()[:-1].split(',')
+    y2 = list(map(int, vals))[1000:]
 
-    for line in f.readlines():
-        vals = line.strip()[:-1].split(',')
-        ys.append(list(map(int, vals)))
 
 
-for y in ys:
-    print(min(y))
-    plt.plot(x,y)
+print(min(y1))
+plt.plot(x, y1, color='blue', label='Best')
+plt.plot(x, y2, color='red', label='Inc')
 # Add labels and a legend
 plt.xlabel('X-axis')
 plt.ylabel('Y-axis')
@@ -37,6 +41,7 @@ plt.legend()
 
 # Add a grid (optional)
 plt.grid(True, linestyle='--', alpha=0.7)
+plt.yscale('log')
 
 # Show the plot
 plt.show()

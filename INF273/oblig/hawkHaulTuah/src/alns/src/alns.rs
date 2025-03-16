@@ -28,12 +28,13 @@ pub fn alns_general(
 
     let mut weights_history: Vec<Vec<f64>> = Vec::new();
     let mut best_history: Vec<u128> = Vec::new();
+    let mut incumbent_history: Vec<u128> = Vec::new();
 
-    let r = 0.15;
+    let r = 0.2;
     let mut iterations_since_improvement = 0;
     let mut iterations = 0;
     let max_iterations = 24900;
-    let escape_condition = 1000;
+    let escape_condition = 200;
     let mut escape_size = 100;
     let segment_size = 100;
     let mut operator_use_counts = vec![0; operators.len()];
@@ -51,21 +52,21 @@ pub fn alns_general(
     while iterations < max_iterations {
         best_history.push(best_cost);
         weights_history.push(weights.clone());
+        incumbent_history.push(incumbent_cost);
         iterations += 1;
 
         // Escape if reached escape conditions
         if iterations_since_improvement > escape_condition {
             let operator = operators[dist.sample(&mut rng)];
-            incumbent = escape(&instance, &incumbent, operator, best_cost, escape_size);
+            incumbent = escape(&instance, &incumbent, &operator, best_cost, escape_size);
             escape_size += 1;
             (incumbent_cost, _) = check_feasibility_and_get_cost(&instance, &incumbent);
 
             if incumbent_cost < best_cost {
                 best_cost = incumbent_cost;
                 best_sol = incumbent.clone();
+                iterations_since_improvement = 0
             }
-
-            iterations_since_improvement = 0
         }
 
         new_solution = incumbent.clone();
@@ -143,16 +144,20 @@ pub fn alns_general(
         }
     }
 
-    // for c in best_history {
-    //     print!("{},", c);
-    // }
+    for c in best_history {
+        print!("{},", c);
+    }
+    println!();
+    for c in incumbent_history {
+        print!("{},", c);
+    }
     (best_sol, best_cost, weights_history)
 }
 
 fn escape(
     instance: &Instance,
     solution: &Vec<Vec<u32>>,
-    operator: OperatorFn,
+    operator: &OperatorFn,
     best_cost: u128,
     escape_iterations: usize,
 ) -> Vec<Vec<u32>> {
