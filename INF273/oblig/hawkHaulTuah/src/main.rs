@@ -13,8 +13,8 @@ use std::{u128, u32};
 
 fn main() {
     let filenames: Vec<&str> = vec![
-        "src/data/Call_7_Vehicle_3.txt",
-        "src/data/Call_18_Vehicle_5.txt",
+        // "src/data/Call_7_Vehicle_3.txt",
+        // "src/data/Call_18_Vehicle_5.txt",
         "src/data/Call_35_Vehicle_7.txt",
         "src/data/Call_80_Vehicle_20.txt",
         "src/data/Call_130_Vehicle_40.txt",
@@ -53,9 +53,11 @@ fn main() {
     // }
 
     let my_operators = vec![
-        two_call_swap as OperatorFn,
-        reinsert_sub_route as OperatorFn,
-        k_reinsert as OperatorFn,
+        random_removal_greedy_insert as OperatorFn,
+        // worst_removal_greedy_insert as OperatorFn,
+        route_removal_greedy_insert as OperatorFn,
+        one_reinsert_greedy_insert as OperatorFn,
+        k_reinsert as OperatorFn
     ];
 
     // let filename = "src/data/Call_35_Vehicle_7.txt";
@@ -100,6 +102,7 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
     // }
     let init_cost = check_feasibility_and_get_cost(&instance, &outsource_sol).0;
     let avg_cost = total_sum / 10;
+    let avg_time = total_time as f64 / 10.0;
     let diff_avg = init_cost - avg_cost;
     let improvement_avg: f64 = (diff_avg as f64 / init_cost as f64) * 100.0;
     let diff_best = init_cost - best_cost;
@@ -107,13 +110,13 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
 
     println!(
         "Ran ALNS with custom operators. {filename}
-    Avg time taken: {}ms
+    Avg time taken: {:.2}s
     Best cost: {}
     Avg cost: {}
     Improvement avg: {:.2}%
     Improvement best: {:.2}%
     Solution: ",
-        total_time / 10,
+        avg_time / 1000.0,
         best_cost,
         avg_cost,
         improvement_avg,

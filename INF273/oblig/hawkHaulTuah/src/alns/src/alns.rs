@@ -30,12 +30,12 @@ pub fn alns_general(
     let mut best_history: Vec<u128> = Vec::new();
     let mut incumbent_history: Vec<u128> = Vec::new();
 
-    let mut r = 0.3;
+    let mut r = 0.1;
     let mut iterations_since_improvement = 0;
     let mut iterations = 0;
     let max_iterations = 24900;
     let escape_condition = 200;
-    let mut escape_size = 20;
+    let mut escape_size = 5;
     let segment_size = 300;
     let mut operator_use_counts = vec![0; operators.len()];
     let mut operator_points = vec![0; operators.len()];
@@ -66,7 +66,7 @@ pub fn alns_general(
         if iterations_since_improvement >= escape_condition {
             let operator = operators[dist.sample(&mut rng)];
             incumbent = escape(&instance, &incumbent, &operator, best_cost, escape_size);
-            escape_size += 1;
+            // escape_size += 1;
             (incumbent_cost, _) = check_feasibility_and_get_cost(&instance, &incumbent);
 
             if incumbent_cost < best_cost {
@@ -74,7 +74,7 @@ pub fn alns_general(
                 best_sol = incumbent.clone();
                 iterations_since_improvement = 0
             } else {
-                escape_size = (escape_size as f64 * 1.5) as usize;
+                // escape_size = (escape_size as f64 * 1.5) as usize;
             }
         }
 
@@ -164,14 +164,14 @@ pub fn alns_general(
             }
         }
     }
-    /*
-    for c in best_history {
-        print!("{},", c);
-    }
-    println!();
-    for c in incumbent_history {
-        print!("{},", c);
-    }*/
+
+    // for c in best_history {
+    //     print!("{},", c);
+    // }
+    // println!();
+    // for c in incumbent_history {
+    //     print!("{},", c);
+    // }
     (best_sol, best_cost, weights_history)
 }
 
@@ -185,7 +185,7 @@ fn escape(
     let mut end_solution = solution.clone();
 
     for _i in 0..escape_iterations {
-        let new = operator(&instance, &end_solution);
+        let new = random_removal_first_feasible_insert(&instance, &end_solution);
         let (cost, feasibility) = check_feasibility_and_get_cost(&instance, &new);
         if !feasibility {
             continue;
