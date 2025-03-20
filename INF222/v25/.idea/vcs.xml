@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/obligatory-1-inf222-v25" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/obligatory-2-inf222-v25" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/obligatory-2-inf222-v25-solution" vcs="Git" />
+  </component>
+</project>

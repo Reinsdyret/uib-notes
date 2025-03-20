@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="0fc55b64-87c7-47e3-b8e8-090f5056e2c8" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/obligatory-1-inf222-v25" beforeDir="false" afterPath="$PROJECT_DIR$/obligatory-1-inf222-v25" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obligatory-1-inf222-v25/part-1/skatteetaten.kts" beforeDir="false" afterPath="$PROJECT_DIR$/obligatory-1-inf222-v25/part-1/skatteetaten.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obligatory-1-inf222-v25/part-2/src/main/java/inf222/aop/CurrencyAspect.java" beforeDir="false" afterPath="$PROJECT_DIR$/obligatory-1-inf222-v25/part-2/src/main/java/inf222/aop/CurrencyAspect.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obligatory-2-inf222-v25-solution/src/main/kotlin/org/uib/JavaTSTranspiler.kt" beforeDir="false" afterPath="$PROJECT_DIR$/obligatory-2-inf222-v25-solution/src/main/kotlin/org/uib/JavaTSTranspiler.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obligatory-2-inf222-v25-solution/ts/src/transpiled.ts" beforeDir="false" afterPath="$PROJECT_DIR$/obligatory-2-inf222-v25-solution/ts/src/transpiled.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/obligatory-2-inf222-v25/src/main/kotlin/org/uib/JavaTSTranspiler.kt" beforeDir="false" afterPath="$PROJECT_DIR$/obligatory-2-inf222-v25/src/main/kotlin/org/uib/JavaTSTranspiler.kt" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 3
+}]]></component>
+  <component name="ProjectId" id="2uJKMJXcfjkccA1qRL22CwYMWZW" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/home/larsh/Documents/uib-notes/INF222/v25/obligatory-2-inf222-v25-solution"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="0fc55b64-87c7-47e3-b8e8-090f5056e2c8" name="Changes" comment="" />
+      <created>1741961187225</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1741961187225</updated>
+    </task>
+    <servers />
+  </component>
+</project>
