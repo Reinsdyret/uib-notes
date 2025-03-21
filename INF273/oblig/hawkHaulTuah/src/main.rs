@@ -1,7 +1,7 @@
 use alns::alns_general;
 use checker::checker::*;
 use file_reader::parse_data::*; // Import read_file function
-use local_search::operators::{random_removal_k_regret_insert, route_removal_greedy_insert, actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts, two_call_swap, random_removal_greedy_insert, worst_removal_greedy_insert, one_reinsert_focus_dummy_random_feasible, one_reinsert_probability, worst_removal_k_regret_insert, route_removal_k_regret_insert};
+use local_search::operators::{random_removal_k_regret_insert, route_removal_greedy_insert, actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts, two_call_swap, random_removal_greedy_insert, worst_removal_greedy_insert, one_reinsert_focus_dummy_random_feasible, one_reinsert_probability, worst_removal_k_regret_insert, route_removal_k_regret_insert, random_removal_first_feasible_insert};
 use local_search::{local_search::*, operators};
 use log::{debug, error, info, log_enabled, warn, Level};
 use random_meta::random::*;
@@ -13,8 +13,8 @@ use std::{u128, u32};
 
 fn main() {
     let filenames: Vec<&str> = vec![
-        // "src/data/Call_7_Vehicle_3.txt",
-        // "src/data/Call_18_Vehicle_5.txt",
+        "src/data/Call_7_Vehicle_3.txt",
+        "src/data/Call_18_Vehicle_5.txt",
         "src/data/Call_35_Vehicle_7.txt",
         "src/data/Call_80_Vehicle_20.txt",
         "src/data/Call_130_Vehicle_40.txt",
@@ -57,7 +57,8 @@ fn main() {
         // worst_removal_greedy_insert as OperatorFn,
         route_removal_greedy_insert as OperatorFn,
         one_reinsert_greedy_insert as OperatorFn,
-        k_reinsert as OperatorFn
+        k_reinsert as OperatorFn,
+        random_removal_first_feasible_insert as OperatorFn
     ];
 
     // let filename = "src/data/Call_35_Vehicle_7.txt";
@@ -115,13 +116,13 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
     Avg cost: {}
     Improvement avg: {:.2}%
     Improvement best: {:.2}%
-    Solution: ",
+    Solution: {:?}",
         avg_time / 1000.0,
         best_cost,
         avg_cost,
         improvement_avg,
         improvement_best,
-        //concat_solution(&best_solution)
+        concat_solution(&best_solution)
     );
 }
 

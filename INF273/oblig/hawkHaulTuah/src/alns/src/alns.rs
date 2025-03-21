@@ -36,7 +36,7 @@ pub fn alns_general(
     let max_iterations = 24900;
     let escape_condition = 200;
     let mut escape_size = 5;
-    let segment_size = 300;
+    let segment_size = 250;
     let mut operator_use_counts = vec![0; operators.len()];
     let mut operator_points = vec![0; operators.len()];
 
@@ -140,7 +140,7 @@ pub fn alns_general(
                     weights[weights_i] * (1.0 - r)
                         + r * (operator_points[weights_i] as f64
                             / operator_use_counts[weights_i] as f64),
-                    0.05,
+                    0.07,
                 );
             }
 
