@@ -54,10 +54,11 @@ fn main() {
 
     let my_operators = vec![
         random_removal_greedy_insert as OperatorFn,
-        // worst_removal_greedy_insert as OperatorFn,
+        worst_removal_greedy_insert as OperatorFn,
         route_removal_greedy_insert as OperatorFn,
         one_reinsert_greedy_insert as OperatorFn,
         k_reinsert as OperatorFn,
+        // actual_k_reinsert as OperatorFn,
         random_removal_first_feasible_insert as OperatorFn
     ];
 

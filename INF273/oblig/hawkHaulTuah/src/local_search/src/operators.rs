@@ -734,7 +734,7 @@ fn first_random_feasible_insertion(instance: &Instance, old_route: &Vec<Vec<u32>
     let mut calls_to_insert = calls_to_insert.clone();
     calls_to_insert.shuffle(&mut rng);
 
-    let chance_for_outsource = 0.2;
+    let chance_for_outsource = 1.0 / instance.num_calls as f64;
 
     for call in calls_to_insert {
         let test_route = result_route.clone();
@@ -799,7 +799,7 @@ pub fn route_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u3
 }
 
 pub fn random_removal_first_feasible_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = rand::random_range(3..instance.num_calls/2);
+    let k = rand::random_range(3..instance.num_calls/2 + 3);
     let (new_route, calls) = random_removal(&old_route, k);
 
     first_random_feasible_insertion(&instance, &new_route, calls)
