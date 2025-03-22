@@ -1,7 +1,7 @@
 use alns::alns_general;
 use checker::checker::*;
 use file_reader::parse_data::*; // Import read_file function
-use local_search::operators::{random_removal_k_regret_insert, route_removal_greedy_insert, actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts, two_call_swap, random_removal_greedy_insert, worst_removal_greedy_insert, one_reinsert_focus_dummy_random_feasible, one_reinsert_probability, worst_removal_k_regret_insert, route_removal_k_regret_insert, random_removal_first_feasible_insert};
+use local_search::operators::{random_removal_k_regret_insert, route_removal_greedy_insert, actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts, two_call_swap, random_removal_greedy_insert, worst_removal_greedy_insert, one_reinsert_focus_dummy_random_feasible, one_reinsert_probability, worst_removal_k_regret_insert, route_removal_k_regret_insert, random_removal_first_feasible_insert, random_removal_k_regret_precise};
 use local_search::{local_search::*, operators};
 use log::{debug, error, info, log_enabled, warn, Level};
 use random_meta::random::*;
@@ -58,6 +58,7 @@ fn main() {
         route_removal_greedy_insert as OperatorFn,
         one_reinsert_greedy_insert as OperatorFn,
         k_reinsert as OperatorFn,
+        random_removal_k_regret_precise as OperatorFn,
         // actual_k_reinsert as OperatorFn,
         random_removal_first_feasible_insert as OperatorFn
     ];
@@ -80,18 +81,80 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
     let instance = read_file(filename);
     let outsource_sol = get_init_solution(instance.num_calls, instance.num_vehicles);
 
+    // Create channel to receive progress updates
+    let (tx, rx) = std::sync::mpsc::channel();
+    let total_runs = if parallel { 10 } else { 1 };
+    
+    // Start a thread to monitor progress and print time estimates
+    let progress_thread = std::thread::spawn(move || {
+        let mut completed = 0;
+        let start_time = Instant::now();
+        let mut last_print = Instant::now();
+        
+        while completed < total_runs {
+            // Check for messages with a timeout
+            match rx.recv_timeout(Duration::from_millis(100)) {
+                Ok(_) => {
+                    completed += 1;
+                    
+                    // Calculate and print progress immediately for each completion
+                    let elapsed = start_time.elapsed().as_secs_f64();
+                    let avg_time_per_run = elapsed / completed as f64;
+                    let remaining_runs = total_runs - completed;
+                    let est_remaining_time = avg_time_per_run * remaining_runs as f64;
+                    
+                    println!("Completed {}/{} runs. Est. remaining: {:.1} minutes", 
+                             completed, total_runs, est_remaining_time / 60.0);
+                },
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                    // Check if it's time to print an update (every minute)
+                    if last_print.elapsed().as_secs() >= 60 && completed > 0 {
+                        let elapsed = start_time.elapsed().as_secs_f64();
+                        let avg_time_per_run = elapsed / completed as f64;
+                        let remaining_runs = total_runs - completed;
+                        let est_remaining_time = avg_time_per_run * remaining_runs as f64;
+                        
+                        println!("Progress: {}/{} runs. Est. remaining: {:.1} minutes", 
+                                 completed, total_runs, est_remaining_time / 60.0);
+                        
+                        last_print = Instant::now();
+                    }
+                },
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+            }
+        }
+    });
+
     let results: Vec<(Vec<Vec<u32>>, u128, Vec<Vec<f64>>)>;
     let now = Instant::now();
+    
     if parallel {
+        // Use thread-local clone of tx to avoid sharing issues
         results = (0..10)
             .into_par_iter()
-            .map(|_| alns_general(&instance, &operators))
+            .map(|_| {
+                let tx = tx.clone();
+                let result = alns_general(&instance, &operators);
+                let _ = tx.send(());  // Notify progress thread
+                result
+            })
             .collect()
     } else {
         results = (0..1)
-            .map(|_| alns_general(&instance, &operators))
+            .map(|_| {
+                let result = alns_general(&instance, &operators);
+                let _ = tx.send(());  // Notify progress thread
+                result
+            })
             .collect();
     }
+    
+    // Drop the original sender to allow the progress thread to finish
+    drop(tx);
+    
+    // Wait for the progress thread to complete
+    let _ = progress_thread.join();
+    
     println!();
 
     let total_time = Instant::now().duration_since(now).as_millis();
@@ -103,8 +166,8 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
     //     println!("{:?}", w);
     // }
     let init_cost = check_feasibility_and_get_cost(&instance, &outsource_sol).0;
-    let avg_cost = total_sum / 10;
-    let avg_time = total_time as f64 / 10.0;
+    let avg_cost = total_sum / (if parallel { 10 } else { 1 });
+    let avg_time = total_time as f64 / (if parallel { 10.0 } else { 1.0 });
     let diff_avg = init_cost - avg_cost;
     let improvement_avg: f64 = (diff_avg as f64 / init_cost as f64) * 100.0;
     let diff_best = init_cost - best_cost;
