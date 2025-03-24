@@ -1,7 +1,7 @@
 use alns::alns_general;
 use checker::checker::*;
 use file_reader::parse_data::*; // Import read_file function
-use local_search::operators::{random_removal_k_regret_insert, route_removal_greedy_insert, actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, try_k_reinserts, two_call_swap, random_removal_greedy_insert, worst_removal_greedy_insert, one_reinsert_focus_dummy_random_feasible, one_reinsert_probability, worst_removal_k_regret_insert, route_removal_k_regret_insert, random_removal_first_feasible_insert, random_removal_k_regret_precise};
+use local_search::operators::{random_removal_k_regret_insert, route_removal_greedy_insert, actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, two_call_swap, random_removal_greedy_insert, worst_removal_greedy_insert, one_reinsert_focus_dummy_random_feasible, one_reinsert_probability, worst_removal_k_regret_insert, route_removal_k_regret_insert, random_removal_first_feasible_insert, shaw_removal_greedy_insert, shaw_removal_k_regret_insert};
 use local_search::{local_search::*, operators};
 use log::{debug, error, info, log_enabled, warn, Level};
 use random_meta::random::*;
@@ -52,15 +52,31 @@ fn main() {
     //     );
     // }
 
+    // Balance operators that focus on diversification and intensification
     let my_operators = vec![
-        random_removal_greedy_insert as OperatorFn,
-        worst_removal_greedy_insert as OperatorFn,
-        route_removal_greedy_insert as OperatorFn,
-        one_reinsert_greedy_insert as OperatorFn,
-        k_reinsert as OperatorFn,
-        random_removal_k_regret_precise as OperatorFn,
-        // actual_k_reinsert as OperatorFn,
-        random_removal_first_feasible_insert as OperatorFn
+        // Destroy-repair operators for diversification
+        random_removal_greedy_insert as OperatorFn,       // Simple greedy
+        worst_removal_greedy_insert as OperatorFn,        // Remove costly calls
+        route_removal_greedy_insert as OperatorFn,        // Remove entire routes
+        
+        // Shaw removal operators (remove related calls)
+        shaw_removal_greedy_insert as OperatorFn,         // Shaw with greedy insertion
+        shaw_removal_k_regret_insert as OperatorFn,       // Shaw with k-regret insertion
+        
+        // Regret-based operators for intelligent insertion
+        random_removal_k_regret_insert as OperatorFn,
+        worst_removal_k_regret_insert as OperatorFn,
+        route_removal_k_regret_insert as OperatorFn,
+        
+        // Fast randomized insertion
+        random_removal_first_feasible_insert as OperatorFn,
+        
+        // Improvement operators for intensification
+        one_reinsert_greedy_insert as OperatorFn,         // Single call improvement
+        reinsert_sub_route as OperatorFn,                 // Subroute improvement
+        k_reinsert as OperatorFn,                         // Multiple greedy insertions
+        actual_k_reinsert as OperatorFn,                  // Focused multiple call insertion
+        two_call_swap as OperatorFn                       // Swap between vehicles
     ];
 
     // let filename = "src/data/Call_35_Vehicle_7.txt";

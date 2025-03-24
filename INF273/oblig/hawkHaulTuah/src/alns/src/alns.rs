@@ -6,7 +6,7 @@ use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
 use simmulated_annealing::simmulated_annealing::{OperatorFn, find_avg_delta_with_operators};
 use std::collections::HashSet;
-use rand::random;
+use rand::{random, random_range};
 
 pub fn alns_general(
     instance: &Instance,
@@ -34,9 +34,9 @@ pub fn alns_general(
     let mut iterations_since_improvement = 0;
     let mut iterations = 0;
     let max_iterations = 24900;
-    let escape_condition = 200;
-    let mut escape_size = 5;
-    let segment_size = 250;
+    let escape_condition = 100;
+    let mut escape_size = 20;
+    let segment_size = 50;
     let mut operator_use_counts = vec![0; operators.len()];
     let mut operator_points = vec![0; operators.len()];
 
@@ -132,6 +132,7 @@ pub fn alns_general(
         temp = temp * alpha;
 
         if iterations % segment_size == 0 {
+            let sum_points: i32 = operator_points.iter().sum();
             // Update weights and counts
             for weights_i in 0..weights.len() {
                 // println!("{}", operator_points[weights_i]);
@@ -140,7 +141,7 @@ pub fn alns_general(
                     weights[weights_i] * (1.0 - r)
                         + r * (operator_points[weights_i] as f64
                             / operator_use_counts[weights_i] as f64),
-                    0.07,
+                    rng.random_range(0.05 ..0.25),
                 );
             }
 
@@ -185,7 +186,7 @@ fn escape(
     let mut end_solution = solution.clone();
 
     for _i in 0..escape_iterations {
-        let new = random_removal_first_feasible_insert(&instance, &end_solution);
+        let new = operator(&instance, &end_solution);
         let (cost, feasibility) = check_feasibility_and_get_cost(&instance, &new);
         if !feasibility {
             continue;

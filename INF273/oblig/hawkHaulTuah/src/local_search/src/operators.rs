@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use checker::checker::*;
 use file_reader::parse_data::*;
 use rand::distr::weighted::WeightedIndex;
-use rand::{prelude::*, rng};
+use rand::{prelude::*, random_range, rng};
 
 pub fn one_reinsert_focus_dummy_random_feasible(
     instance: &Instance,
@@ -326,45 +326,6 @@ pub fn actual_k_reinsert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<
     return route;
 }
 
-pub fn try_k_reinserts(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let mut rng = rng();
-    let k = 50;
-
-    let mut costs: Vec<u128> = Vec::new();
-    let mut reinserts: Vec<Vec<Vec<u32>>> = Vec::new();
-
-    for _i in 0..k {
-        let mut vehicle_from_idx = rng.random_range(0..old_route.len());
-
-        while old_route[vehicle_from_idx].len() == 0 {
-            vehicle_from_idx = rng.random_range(0..old_route.len());
-        }
-
-        let call_idx = rng.random_range(0..old_route[vehicle_from_idx].len());
-
-        let mut sol_copy = old_route.clone();
-        let call = remove_call_from_vehicle(call_idx, vehicle_from_idx, &mut sol_copy);
-
-        sol_copy = insert_best_position(&instance, &sol_copy, call);
-
-        let cost = check_feasibility_and_get_cost(&instance, &sol_copy).0;
-
-        costs.push(cost);
-        reinserts.push(sol_copy);
-    }
-
-    match WeightedIndex::new(&costs) {
-        Ok(dist) => {
-            // Select an index based on weights
-            let selected_idx = dist.sample(&mut rng);
-            return reinserts[selected_idx].clone();
-        }
-        Err(_) => {
-            return one_reinsert_probability(&instance, &old_route);
-        }
-    }
-}
-
 pub fn remove_from_vehicle_travel_long(
     instance: &Instance,
     old_route: &Vec<Vec<u32>>,
@@ -649,6 +610,188 @@ fn random_removal(old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<u32>
     (new_route, removed_calls)
 }
 
+/// Shaw removal - removes related calls based on travel distances and time windows
+///
+/// This implementation first selects a random call, then removes calls that are
+/// spatially and temporally related to the selected call.
+fn shaw_removal(instance: &Instance, old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<u32>) {
+    let mut rng = rand::rng();
+    let mut removed_calls = Vec::new();
+    let mut new_route = old_route.clone();
+    
+    // Skip if there are no calls
+    if old_route.iter().all(|v| v.is_empty()) {
+        return (new_route, removed_calls);
+    }
+    
+    // Get a random first call to remove (seed call)
+    let vehicle_idx = get_random_vehicle(&new_route, true);
+    if new_route[vehicle_idx].is_empty() {
+        return random_removal(old_route, k); // Fallback
+    }
+    
+    let call_idx = rng.random_range(0..new_route[vehicle_idx].len());
+    let seed_call = new_route[vehicle_idx][call_idx];
+    let call = remove_call_from_vehicle(call_idx, vehicle_idx, &mut new_route);
+    removed_calls.push(call);
+    
+    // Get seed call data
+    let seed_call_data = &instance.calls[(seed_call - 1) as usize];
+    
+    // Collect all remaining calls in the solution
+    let mut all_calls = Vec::new();
+    for (v_idx, vehicle) in new_route.iter().enumerate() {
+        if v_idx == new_route.len() - 1 {
+            continue; // Skip outsource vehicle
+        }
+        
+        let vehicle_calls: HashSet<u32> = vehicle.iter().cloned().collect();
+        for call_id in vehicle_calls {
+            all_calls.push((call_id, v_idx));
+        }
+    }
+    
+    // If no more calls left, return early
+    if all_calls.is_empty() {
+        return (new_route, removed_calls);
+    }
+    
+    // Score all remaining calls by relatedness to the seed call
+    let mut relatedness_scores = Vec::new();
+    
+    for (call_id, vehicle_idx) in all_calls {
+        let call_data = &instance.calls[(call_id - 1) as usize];
+        let vehicle_id = (vehicle_idx + 1) as u32; // Vehicle indices start at 1 in instance
+        
+        // Calculate distance score using actual travel costs from instance
+        // Get minimum travel cost between the seed call and current call's nodes
+        let travel_o1_o2 = instance.travels[&(vehicle_id, seed_call_data.origin, call_data.origin)].cost;
+        let travel_o1_d2 = instance.travels[&(vehicle_id, seed_call_data.origin, call_data.destination)].cost;
+        let travel_d1_o2 = instance.travels[&(vehicle_id, seed_call_data.destination, call_data.origin)].cost;
+        let travel_d1_d2 = instance.travels[&(vehicle_id, seed_call_data.destination, call_data.destination)].cost;
+        
+        // Get the minimum cost among all combinations
+        let min_cost = travel_o1_o2.min(travel_o1_d2).min(travel_d1_o2).min(travel_d1_d2);
+        
+        // Normalize travel cost (lower is better)
+        // We'll use a simple normalization based on a reasonable maximum distance
+        let max_expected_cost = 1000_u128; // Adjust based on your problem
+        let distance_score = min_cost as f64 / max_expected_cost as f64;
+        
+        // Calculate time window overlap for pickup and delivery
+        let pickup_overlap = calculate_time_window_overlap(
+            seed_call_data.pickup_start, seed_call_data.pickup_end,
+            call_data.pickup_start, call_data.pickup_end
+        );
+        
+        let delivery_overlap = calculate_time_window_overlap(
+            seed_call_data.delivery_start, seed_call_data.delivery_end,
+            call_data.delivery_start, call_data.delivery_end
+        );
+        
+        // Higher overlap is better, so we invert (lower score is better)
+        let time_score = 1.0 - ((pickup_overlap + delivery_overlap) / 2.0);
+        
+        // Also consider size similarity
+        let size_ratio = if seed_call_data.size >= call_data.size {
+            call_data.size as f64 / seed_call_data.size as f64
+        } else {
+            seed_call_data.size as f64 / call_data.size as f64
+        };
+        
+        // Combine scores (lower is more related)
+        // We weight distance more heavily than time windows
+        let relatedness_score = 0.6 * distance_score + 0.3 * time_score + 0.1 * (1.0 - size_ratio);
+        
+        relatedness_scores.push((call_id, vehicle_idx, relatedness_score));
+    }
+    
+    if relatedness_scores.is_empty() {
+        return (new_route, removed_calls);
+    }
+    
+    // Transform relatedness scores into weights for the WeightedIndex
+    // For WeightedIndex, higher weights = higher probability
+    // But our scores are reversed (lower score = more related)
+    // So we need to invert the scores
+    
+    // Find the max score to help with inversion
+    let max_score = relatedness_scores.iter()
+        .map(|(_, _, score)| *score)
+        .fold(0.0, |a: f64, b: f64| a.max(b));
+        
+    // Create a copy of relatedness_scores to work with
+    let mut working_scores = relatedness_scores.clone();
+    
+    // Number of calls to select
+    let num_to_select = std::cmp::min(k as usize - 1, working_scores.len());
+    
+    for _ in 0..num_to_select {
+        if working_scores.is_empty() {
+            break;
+        }
+        
+        // Recalculate weights each time (since we remove elements)
+        let weights: Vec<f64> = working_scores.iter()
+            .map(|(_, _, score)| (max_score - score + 0.01))
+            .collect();
+            
+        // Create a new weighted distribution
+        match WeightedIndex::new(&weights) {
+            Ok(dist) => {
+                // Select index using weighted distribution
+                let idx = dist.sample(&mut rng);
+                
+                // Get the call info
+                let (call_id, v_idx, _) = working_scores[idx];
+                
+                // Remove call from working set
+                working_scores.remove(idx);
+                
+                // Find and remove this call from the solution
+                if let Some(c_idx) = new_route[v_idx].iter().position(|&c| c == call_id) {
+                    let call = remove_call_from_vehicle(c_idx, v_idx, &mut new_route);
+                    removed_calls.push(call);
+                }
+            },
+            Err(_) => {
+                // Fallback to random selection if weighting fails
+                let idx = rng.random_range(0..working_scores.len());
+                let (call_id, v_idx, _) = working_scores.remove(idx);
+                
+                if let Some(c_idx) = new_route[v_idx].iter().position(|&c| c == call_id) {
+                    let call = remove_call_from_vehicle(c_idx, v_idx, &mut new_route);
+                    removed_calls.push(call);
+                }
+            }
+        }
+    }
+    
+    (new_route, removed_calls)
+}
+
+/// Helper function to calculate time window overlap between two time windows
+/// Returns a value between 0.0 (no overlap) and 1.0 (complete overlap)
+fn calculate_time_window_overlap(start1: u128, end1: u128, start2: u128, end2: u128) -> f64 {
+    let latest_start = std::cmp::max(start1, start2);
+    let earliest_end = std::cmp::min(end1, end2);
+    
+    if latest_start <= earliest_end {
+        // There is an overlap
+        let overlap_length = earliest_end - latest_start;
+        let window1_length = end1 - start1;
+        let window2_length = end2 - start2;
+        
+        // Normalize by the average window length
+        let avg_window_length = (window1_length + window2_length) / 2;
+        if avg_window_length > 0 {
+            return overlap_length as f64 / avg_window_length as f64;
+        }
+    }
+    
+    0.0 // No overlap
+}
+
 fn worst_removal(instance: &Instance, old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<u32>) {
     let mut removed_calls = Vec::new();
     let mut new_route = old_route.clone();
@@ -665,8 +808,13 @@ fn worst_removal(instance: &Instance, old_route: &Vec<Vec<u32>>, k: u32) -> (Vec
 fn route_removal(_instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
     let mut rng = rng();
     let mut removed_calls = HashSet::new();
+
+    let non_empty_vehicles: Vec<usize> = (0..old_route.len())
+        .filter(|&idx| !old_route[idx].is_empty())
+        .collect();
+
     let mut new_route = old_route.clone();
-    let mut vehicle_idx = rng.random_range(0..new_route.len());
+    let mut vehicle_idx = rng.random_range(0..non_empty_vehicles.len());
     for c in &new_route[vehicle_idx] {
         removed_calls.insert(*c);
     }
@@ -691,16 +839,31 @@ fn greedy_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_ins
     new_route
 }
 
+/// K-regret insertion heuristic
+///
+/// Inserts calls one by one, choosing the call with the highest "regret" value at each step.
+/// The regret value is the difference between the best insertion cost and the kth best insertion cost.
+/// The intuition is that calls with high regret should be inserted first, since they would suffer more
+/// from being inserted later when fewer options remain.
+///
+/// # Parameters
+/// * `instance` - Problem instance data
+/// * `old_route` - Current route to improve
+/// * `calls_to_insert` - Vector of calls that need to be inserted
+/// * `k` - The k parameter that determines how many alternative insertions to consider for regret
+///
+/// # Returns
+/// * Updated solution with all calls inserted
 fn k_regret_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>, k: usize) -> Vec<Vec<u32>> {
     let mut new_route = old_route.clone();
     let mut remaining_calls = calls_to_insert.clone();
 
-    // Calculate all regret values once
-    let mut regret_values = calculate_all_regret_values(instance, &new_route, &remaining_calls, k);
-
     // Continue until all calls are inserted
     while !remaining_calls.is_empty() {
-        // Find the call with maximum regret
+        // Calculate regret values for all remaining calls
+        let mut regret_values = calculate_all_regret_values(instance, &new_route, &remaining_calls, k);
+        
+        // Find the call with maximum regret (or with feasible insertions)
         let best_call_opt = remaining_calls.iter()
             .filter(|&call| regret_values.contains_key(call))
             .max_by_key(|&call| regret_values[call]);
@@ -713,176 +876,18 @@ fn k_regret_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_i
             remaining_calls.retain(|&c| c != best_call);
         } else {
             // No feasible insertions - send remaining calls to outsource
+            let outsource_idx = new_route.len() - 1;
             for call in remaining_calls {
-                let outsource_idx = new_route.len() - 1;
                 new_route[outsource_idx].push(call);
                 new_route[outsource_idx].push(call);
             }
             break;
         }
-
-        // Recalculate regret values for remaining calls
-        regret_values = calculate_all_regret_values(instance, &new_route, &remaining_calls, k);
     }
 
     new_route
 }
 
-fn k_regret_precise(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>, k: usize) -> Vec<Vec<u32>> {
-    // Base case: if there are no calls to insert, return the original route
-    if calls_to_insert.is_empty() {
-        return old_route.clone();
-    }
-    
-    // Create a safe fallback solution using greedy insertion
-    let mut fallback_solution = old_route.clone();
-    for call in &calls_to_insert {
-        fallback_solution = insert_best_position(instance, &fallback_solution, *call);
-    }
-    
-    // If k=1 or only one call, just use greedy insertion
-    if k <= 1 || calls_to_insert.len() <= 1 {
-        return fallback_solution;
-    }
-    
-    // Determine how many calls to consider for precise ordering
-    let precise_k = std::cmp::min(k, calls_to_insert.len());
-    
-    // Try all permutations of the first k calls
-    let mut best_solution = fallback_solution.clone();
-    let mut best_cost = check_feasibility_and_get_cost(instance, &fallback_solution).0;
-    
-    // Generate permutations of k calls and test each ordering
-    fn generate_permutations(calls: &[u32], k: usize, prefix: &mut Vec<u32>, result: &mut Vec<Vec<u32>>) {
-        if prefix.len() == k {
-            result.push(prefix.clone());
-            return;
-        }
-        
-        for i in 0..calls.len() {
-            let call = calls[i];
-            if !prefix.contains(&call) {
-                prefix.push(call);
-                generate_permutations(calls, k, prefix, result);
-                prefix.pop();
-            }
-        }
-    }
-    
-    // If we have more calls than k, we'll try different permutations of k calls
-    if precise_k < calls_to_insert.len() {
-        // For each subset of k calls
-        let mut subsets = Vec::new();
-        
-        fn generate_subsets(calls: &[u32], k: usize, start: usize, subset: &mut Vec<u32>, result: &mut Vec<Vec<u32>>) {
-            if subset.len() == k {
-                result.push(subset.clone());
-                return;
-            }
-            
-            for i in start..calls.len() {
-                subset.push(calls[i]);
-                generate_subsets(calls, k, i + 1, subset, result);
-                subset.pop();
-            }
-        }
-        
-        generate_subsets(&calls_to_insert, precise_k, 0, &mut Vec::new(), &mut subsets);
-        
-        for subset in subsets {
-            // Generate permutations of this subset
-            let mut permutations = Vec::new();
-            generate_permutations(&subset, subset.len(), &mut Vec::new(), &mut permutations);
-            
-            for perm in permutations {
-                let mut remaining_calls: Vec<u32> = calls_to_insert.iter()
-                    .filter(|call| !perm.contains(call))
-                    .cloned()
-                    .collect();
-                
-                // Insert the permutation first, then the remaining calls greedily
-                let mut candidate = old_route.clone();
-                
-                // Insert the first k calls in the order of permutation
-                for call in &perm {
-                    candidate = insert_best_position(instance, &candidate, *call);
-                }
-                
-                // Insert remaining calls greedily
-                for call in &remaining_calls {
-                    candidate = insert_best_position(instance, &candidate, *call);
-                }
-                
-                // Verify all calls were inserted
-                let mut all_inserted = true;
-                for call in &calls_to_insert {
-                    // Count occurrences of this call
-                    let count = candidate.iter()
-                        .flatten()
-                        .filter(|&c| c == call)
-                        .count();
-                    
-                    if count != 2 {  // Each call should appear exactly twice (pickup and delivery)
-                        all_inserted = false;
-                        break;
-                    }
-                }
-                
-                if !all_inserted {
-                    continue;  // Skip this candidate if not all calls were inserted
-                }
-                
-                // Evaluate the solution
-                let (cost, feasible) = check_feasibility_and_get_cost(instance, &candidate);
-                if feasible && cost < best_cost {
-                    best_solution = candidate;
-                    best_cost = cost;
-                }
-            }
-        }
-    } else {
-        // All calls fit within k, so we just need to try all permutations
-        let mut permutations = Vec::new();
-        generate_permutations(&calls_to_insert, calls_to_insert.len(), &mut Vec::new(), &mut permutations);
-        
-        for perm in permutations {
-            let mut candidate = old_route.clone();
-            
-            // Insert all calls in this permutation order
-            for call in &perm {
-                candidate = insert_best_position(instance, &candidate, *call);
-            }
-            
-            // Verify all calls were inserted
-            let mut all_inserted = true;
-            for call in &calls_to_insert {
-                // Count occurrences of this call
-                let count = candidate.iter()
-                    .flatten()
-                    .filter(|&c| c == call)
-                    .count();
-                
-                if count != 2 {  // Each call should appear exactly twice (pickup and delivery)
-                    all_inserted = false;
-                    break;
-                }
-            }
-            
-            if !all_inserted {
-                continue;  // Skip this candidate if not all calls were inserted
-            }
-            
-            // Evaluate the solution
-            let (cost, feasible) = check_feasibility_and_get_cost(instance, &candidate);
-            if feasible && cost < best_cost {
-                best_solution = candidate;
-                best_cost = cost;
-            }
-        }
-    }
-    
-    return best_solution;
-}
 
 fn first_random_feasible_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>) -> Vec<Vec<u32>> {
     let mut rng = rng();
@@ -915,14 +920,14 @@ fn first_random_feasible_insertion(instance: &Instance, old_route: &Vec<Vec<u32>
 */
 
 pub fn random_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(3, instance.num_vehicles);
+    let k = u32::max(3, instance.num_calls / instance.num_vehicles );
     let (new_route, calls) = random_removal(&old_route, k);
 
     greedy_insertion(&instance, &new_route, calls)
 }
 
 pub fn worst_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(3, instance.num_vehicles);
+    let k = u32::max(3, instance.num_calls / instance.num_vehicles);
     let (new_route, calls) = worst_removal(&instance, &old_route, k);
 
     greedy_insertion(&instance, &new_route, calls)
@@ -935,22 +940,14 @@ pub fn route_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>
 }
 
 pub fn random_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(3, instance.num_vehicles);
+    let k = u32::max(3, instance.num_calls / instance.num_vehicles);
     let (new_route, calls) = random_removal(&old_route, k);
 
     k_regret_insertion(&instance, &new_route, calls, 3)
 }
 
-pub fn random_removal_k_regret_precise(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(3, instance.num_vehicles);
-    let (new_route, calls) = random_removal(&old_route, k);
-    
-    // Just compute the solution once
-    k_regret_precise(&instance, &new_route, calls, 3)
-}
-
 pub fn worst_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(3, instance.num_vehicles);
+    let k = u32::max(3, instance.num_calls / instance.num_vehicles);
     let (new_route, calls) = worst_removal(&instance, &old_route, k);
 
     k_regret_insertion(&instance, &new_route, calls, 3)
@@ -962,8 +959,46 @@ pub fn route_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u3
     k_regret_insertion(&instance, &new_route, calls, 3)
 }
 
+/// Shaw removal with k-regret insertion repair
+/// 
+/// This operator removes related calls (based on distance and time windows)
+/// and reinserts them using the k-regret heuristic
+pub fn shaw_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let k = u32::max(4, instance.num_calls / instance.num_vehicles);
+    let (new_route, calls) = shaw_removal(&instance, &old_route, k);
+    
+    k_regret_insertion(&instance, &new_route, calls, 3)
+}
+
+/// Shaw removal with greedy insertion repair
+/// 
+/// This operator removes related calls (based on distance and time windows)
+/// and reinserts them using greedy insertion
+pub fn shaw_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let k = u32::max(4, instance.num_calls / instance.num_vehicles);
+    let (new_route, calls) = shaw_removal(&instance, &old_route, k);
+    
+    greedy_insertion(&instance, &new_route, calls)
+}
+
+/// Destroy and repair operator that removes random calls and reinserts them using fast feasible insertion
+/// 
+/// This operator randomly selects a number of calls to remove, then reinserts them using
+/// the first feasible insertion heuristic, which quickly finds any compatible position.
+///
+/// # Parameters
+/// * `instance` - Problem instance data
+/// * `old_route` - Current solution
+///
+/// # Returns
+/// * Updated solution with calls reinserted
 pub fn random_removal_first_feasible_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = rand::random_range(3..instance.num_calls/2 + 3);
+    // Dynamically determine number of calls to remove - make it proportional to problem size
+    // Also add some randomization to the number for exploration
+    let base_removal = u32::max(3, instance.num_vehicles / 2);
+    let max_removal = u32::max(base_removal, instance.num_calls / 5);
+    let k = rand::random_range(base_removal..max_removal + 1);
+    
     let (new_route, calls) = random_removal(&old_route, k);
 
     first_random_feasible_insertion(&instance, &new_route, calls)
@@ -1042,35 +1077,92 @@ fn find_most_costly_call(instance: &Instance, route: &Vec<Vec<u32>>) -> (usize, 
     (most_costly_vehicle_idx, most_costly_call_idx)
 }
 
+/// Find the first feasible insertion for a call with fully randomized positions
+///
+/// This function tries to insert a call into the solution, checking vehicle-compatible
+/// insertions in a random order and with random insertion positions.
+/// 
+/// # Parameters
+/// * `instance` - Problem instance data
+/// * `route` - Current solution
+/// * `call` - The call to insert
+///
+/// # Returns
+/// * Updated solution with the call inserted
 fn find_first_feasible_insert(instance: &Instance, route: &Vec<Vec<u32>>, call: u32) -> Vec<Vec<u32>> {
-    let mut compatible_non_empty: Vec<usize> = (0..route.len() - 1).filter(
-        |vehicle_idx| instance.compatibility[&(*vehicle_idx as u32 + 1)].contains(&call) && !route[*vehicle_idx].is_empty()).collect();
-
     let mut rng = rng();
-    compatible_non_empty.shuffle(&mut rng);
-
+    
+    // Get all compatible vehicles (can include empty ones)
+    let mut compatible_vehicles: Vec<usize> = (0..route.len() - 1)
+        .filter(|vehicle_idx| instance.compatibility[&(*vehicle_idx as u32 + 1)].contains(&call))
+        .collect();
+    
+    // Shuffle the vehicles to check them in random order
+    compatible_vehicles.shuffle(&mut rng);
+    
     let mut resulting_route = route.clone();
-
-    for vehicle_idx in compatible_non_empty {
-        let mut vehicle = route[vehicle_idx].clone();
-        for pickup in 0..=vehicle.len() {
-            for delivery in pickup..=vehicle.len()+1 {
-                let (cost, feasible) = check_insertion_feasibility(&instance, &vehicle, vehicle_idx, call, pickup, delivery);
-                if feasible {
-                    resulting_route[vehicle_idx].insert(pickup, call);
-                    resulting_route[vehicle_idx].insert(delivery, call);
-                    return resulting_route;
-                }
+    
+    // Try each vehicle in random order
+    for vehicle_idx in compatible_vehicles {
+        let vehicle = &route[vehicle_idx];
+        let vehicle_len = vehicle.len();
+        
+        // Generate all possible pickup-delivery pairs
+        let mut insertion_positions = Vec::new();
+        for pickup in 0..=vehicle_len {
+            for delivery in pickup..=vehicle_len {
+                insertion_positions.push((pickup, delivery));
+            }
+        }
+        
+        // Shuffle the insertion positions to try them in random order
+        insertion_positions.shuffle(&mut rng);
+        
+        // Try each pickup-delivery pair in random order
+        for (pickup, delivery) in insertion_positions {
+            let (_, feasible) = check_insertion_feasibility(
+                &instance, 
+                vehicle, 
+                vehicle_idx, 
+                call, 
+                pickup, 
+                delivery
+            );
+            
+            if feasible {
+                resulting_route[vehicle_idx].insert(pickup, call);
+                // Adjust delivery index if pickup comes before it
+                let adjusted_delivery = if delivery > pickup { delivery + 1 } else { delivery };
+                resulting_route[vehicle_idx].insert(adjusted_delivery, call);
+                return resulting_route;
             }
         }
     }
-
-
-    resulting_route[route.len() - 1].insert(0, call);
-    resulting_route[route.len() - 1].insert(0, call);
+    
+    // If no feasible insertion found, use outsource vehicle
+    let outsource_idx = route.len() - 1;
+    
+    // Choose random positions in the outsource vehicle
+    let outsource_len = resulting_route[outsource_idx].len();
+    let pos1 = rng.random_range(0..=outsource_len);
+    let pos2 = rng.random_range(0..=outsource_len + 1);
+    
+    resulting_route[outsource_idx].insert(pos1, call);
+    resulting_route[outsource_idx].insert(pos2, call);
+    
     resulting_route
 }
 
+/// Calculate regret values for all calls that need to be inserted
+///
+/// # Parameters
+/// * `instance` - Problem instance data
+/// * `routes` - Current route configuration
+/// * `calls` - Vector of calls that need to be inserted
+/// * `k` - The k parameter that determines how many alternative insertions to consider
+///
+/// # Returns
+/// * HashMap mapping each call to its regret value
 fn calculate_all_regret_values(
     instance: &Instance,
     routes: &Vec<Vec<u32>>,
@@ -1085,7 +1177,7 @@ fn calculate_all_regret_values(
 
         if !insertion_costs.is_empty() {
             // Calculate regret value
-            let regret = calculate_regret(insertion_costs, k);
+            let regret = calculate_regret(&insertion_costs, k);
             regret_values.insert(call, regret);
         }
     }
@@ -1093,6 +1185,15 @@ fn calculate_all_regret_values(
     regret_values
 }
 
+/// Gets the insertion costs for a call across all compatible vehicles
+///
+/// # Parameters
+/// * `instance` - Problem instance data
+/// * `routes` - Current routes
+/// * `call` - The call to calculate insertion costs for
+///
+/// # Returns
+/// * Vector of insertion costs, sorted from lowest to highest
 fn get_insertion_costs(
     instance: &Instance,
     routes: &Vec<Vec<u32>>,
@@ -1100,6 +1201,7 @@ fn get_insertion_costs(
 ) -> Vec<i128> {
     let mut costs = Vec::new();
 
+    // Check each vehicle (except outsource vehicle)
     for vehicle_idx in 0..routes.len() - 1 {
         // Skip incompatible vehicles
         if !instance.compatibility[&(vehicle_idx as u32 + 1)].contains(&call) {
@@ -1109,34 +1211,54 @@ fn get_insertion_costs(
         let route = &routes[vehicle_idx];
         let (cost, _) = get_best_insert(instance, route, call, vehicle_idx);
 
+        // Only add if a feasible insertion was found
         if cost < i128::MAX {
             costs.push(cost);
         }
     }
 
-    // Sort costs in ascending order
+    // Sort costs in ascending order (lowest cost first)
     costs.sort();
 
     costs
 }
 
-fn calculate_regret(costs: Vec<i128>, k: usize) -> i128 {
+/// Calculate the regret value based on insertion costs
+///
+/// The regret value is the difference between the best insertion cost and the kth best insertion cost.
+/// Higher regret means this call should be inserted early, as its cost increases significantly
+/// if it cannot be inserted in its best position.
+///
+/// # Parameters
+/// * `costs` - Vector of sorted insertion costs
+/// * `k` - Number of positions to consider for regret
+///
+/// # Returns
+/// * Regret value as i128
+fn calculate_regret(costs: &Vec<i128>, k: usize) -> i128 {
     if costs.is_empty() {
         return i128::MIN; // No feasible insertions
     }
 
     if costs.len() == 1 {
-        return -costs[0]; // Only one feasible insertion, return negative cost
+        // Only one feasible insertion location
+        // Return negative cost to prioritize calls with low insertion cost when only one option
+        return -costs[0];
     }
 
+    // Limit k to the number of available costs
     let actual_k = std::cmp::min(k, costs.len());
+    
+    // Best (lowest) insertion cost
     let best_cost = costs[0];
-
+    
+    // Calculate regret as sum of differences between best cost and k-1 other costs
     let mut regret = 0;
     for i in 1..actual_k {
         regret += costs[i] - best_cost;
     }
 
+    // Higher regret value means higher priority
     regret
 }
 
@@ -1568,170 +1690,3 @@ fn find_best_insertion_positions(
     None
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use file_reader::parse_data::{Instance, Call, Vehicle, Travel, Loading};
-    use std::collections::{HashMap, HashSet};
-
-    // A helper function to create a simple test instance
-    fn create_test_instance() -> Instance {
-        // Create a simple instance with 2 vehicles and 3 calls
-        let mut instance = Instance {
-            num_vehicles: 2,
-            num_calls: 3,
-            num_nodes: 8,
-            vehicles: Vec::new(),
-            calls: Vec::new(),
-            travels: HashMap::new(),
-            loadings: HashMap::new(),
-            compatibility: HashMap::new(),
-            valid_vehicles: HashMap::new(),
-        };
-
-        // Add vehicles
-        for i in 1..=2 {
-            let vehicle = Vehicle {
-                index: i,
-                home_node: i,
-                start_time: 0,
-                capacity: 10,
-            };
-            instance.vehicles.push(vehicle);
-        }
-
-        // Add calls
-        for i in 1..=3 {
-            let call = Call {
-                index: i,
-                origin: i + 2,          // Nodes 3, 4, 5
-                destination: i + 5,     // Nodes 6, 7, 8
-                size: 2,
-                pickup_start: 0,
-                pickup_end: 1000,
-                delivery_start: 0,
-                delivery_end: 1000,
-                cost_outsource: 1000,
-            };
-            instance.calls.push(call);
-        }
-
-        // Add vehicle compatibility for all calls
-        for v_idx in 1..=2 {
-            let compatible_calls: HashSet<u32> = [1, 2, 3].iter().cloned().collect();
-            instance.compatibility.insert(v_idx, compatible_calls);
-        }
-        
-        // Set up valid vehicles (inverse of compatibility)
-        for call_idx in 1..=3 {
-            let mut valid_vehicles = Vec::new();
-            for v_idx in 1..=2 {
-                if instance.compatibility[&v_idx].contains(&call_idx) {
-                    valid_vehicles.push(v_idx);
-                }
-            }
-            instance.valid_vehicles.insert(call_idx, valid_vehicles);
-        }
-
-        // Add travel costs and times
-        // We'll make a simple cost model where:
-        // - Travel between any nodes costs 10 * distance
-        // - Distance is abs(node1 - node2)
-        // - Travel time equals travel cost
-        for v_idx in 1..=2 {
-            for i in 1..=8 {
-                for j in 1..=8 {
-                    let distance = (i as i32 - j as i32).abs() as u32;
-                    let cost = distance * 10;
-                    let travel = Travel {
-                        vehicle_index: v_idx,
-                        origin: i,
-                        destination: j,
-                        cost: cost as u128,
-                        time: cost as u128,
-                    };
-                    instance.travels.insert((v_idx, i, j), travel);
-                }
-            }
-        }
-
-        // Add loading costs and times
-        for v_idx in 1..=2 {
-            for call_idx in 1..=3 {
-                let loading = Loading {
-                    vehicle_index: v_idx,
-                    call_index: call_idx,
-                    origin_cost: 5,
-                    origin_time: 5,
-                    destination_cost: 5,
-                    destination_time: 5,
-                };
-                instance.loadings.insert((v_idx, call_idx), loading);
-            }
-        }
-
-        instance
-    }
-
-    #[test]
-    fn test_k_regret_precise() {
-        let instance = create_test_instance();
-        
-        // Create an initial route with all calls outsourced
-        let initial_route = vec![Vec::new(); 3]; // 2 vehicles + 1 outsource
-        
-        // Test with k=1 (should be equivalent to greedy insertion)
-        let calls_to_insert = vec![1, 2, 3];
-        
-        // First test with k=1 (should be similar to greedy insertion)
-        let result_k1 = k_regret_precise(&instance, &initial_route, calls_to_insert.clone(), 1);
-        let (cost_k1, feasible_k1) = check_feasibility_and_get_cost(&instance, &result_k1);
-        
-        assert!(feasible_k1, "k=1 solution should be feasible");
-        println!("k=1 solution: {:?}", result_k1);
-        
-        // Then test with k=2 (should consider pairs of insertions)
-        let result_k2 = k_regret_precise(&instance, &initial_route, calls_to_insert.clone(), 2);
-        let (cost_k2, feasible_k2) = check_feasibility_and_get_cost(&instance, &result_k2);
-        
-        assert!(feasible_k2, "k=2 solution should be feasible");
-        println!("k=2 solution: {:?}", result_k2);
-        
-        // Test with k=3 (should consider all permutations)
-        let result_k3 = k_regret_precise(&instance, &initial_route, calls_to_insert, 3);
-        let (cost_k3, feasible_k3) = check_feasibility_and_get_cost(&instance, &result_k3);
-        
-        assert!(feasible_k3, "k=3 solution should be feasible");
-        println!("k=3 solution: {:?}", result_k3);
-        
-        println!("k=1 cost: {}, k=2 cost: {}, k=3 cost: {}", cost_k1, cost_k2, cost_k3);
-        
-        // Instead of strict assertion, just print the comparison
-        println!("Is k=3 better than k=1? {}", cost_k3 <= cost_k1);
-        println!("Is k=2 better than k=1? {}", cost_k2 <= cost_k1);
-    }
-    
-    #[test]
-    fn test_random_removal_k_regret_precise() {
-        let instance = create_test_instance();
-        
-        // Create an initial solution with calls assigned to vehicles
-        let mut initial_route = vec![Vec::new(); 3]; // 2 vehicles + 1 outsource
-        
-        // Assign calls to vehicles
-        initial_route[0] = vec![1, 1, 2, 2];  // Vehicle 1 has calls 1 and 2
-        initial_route[1] = vec![3, 3];        // Vehicle 2 has call 3
-        
-        // Apply the operator
-        let result = random_removal_k_regret_precise(&instance, &initial_route);
-        
-        // Verify the result is feasible
-        let (_cost, feasible) = check_feasibility_and_get_cost(&instance, &result);
-        
-        assert!(feasible, "Solution should be feasible");
-        
-        // Count total calls to ensure none were lost
-        let total_calls = result.iter().flatten().count();
-        assert_eq!(total_calls, 6, "Solution should contain all calls (each appears twice)");
-    }
-}
