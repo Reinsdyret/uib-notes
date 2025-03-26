@@ -234,7 +234,10 @@ pub fn one_reinsert_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>
 }
 
 pub fn k_reinsert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = 10;
+    let mut rng = rng();
+    let choices = (3..((instance.num_calls / 3) + 3) as usize).step_by(10).collect::<Vec<_>>();
+    let rand_idx = rng.random_range(0..choices.len());
+    let k = choices[rand_idx];
 
     let mut new_sol = old_route.clone();
 
@@ -595,7 +598,7 @@ pub fn two_call_swap(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<
 ========================================================
 */
 
-fn random_removal(old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<u32>) {
+pub fn random_removal(old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<u32>) {
     let mut rng = rand::rng();
     let mut removed_calls = Vec::new();
     let mut new_route = old_route.clone();
@@ -614,7 +617,7 @@ fn random_removal(old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<u32>
 ///
 /// This implementation first selects a random call, then removes calls that are
 /// spatially and temporally related to the selected call.
-fn shaw_removal(instance: &Instance, old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<u32>) {
+pub fn shaw_removal(instance: &Instance, old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<u32>) {
     let mut rng = rand::rng();
     let mut removed_calls = Vec::new();
     let mut new_route = old_route.clone();
@@ -792,7 +795,7 @@ fn calculate_time_window_overlap(start1: u128, end1: u128, start2: u128, end2: u
     0.0 // No overlap
 }
 
-fn worst_removal(instance: &Instance, old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<u32>) {
+pub fn worst_removal(instance: &Instance, old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<u32>) {
     let mut removed_calls = Vec::new();
     let mut new_route = old_route.clone();
 
@@ -805,7 +808,7 @@ fn worst_removal(instance: &Instance, old_route: &Vec<Vec<u32>>, k: u32) -> (Vec
     (new_route, removed_calls)
 }
 
-fn route_removal(_instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
+pub fn route_removal(_instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
     let mut rng = rng();
     let mut removed_calls = HashSet::new();
 
@@ -854,7 +857,7 @@ fn greedy_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_ins
 ///
 /// # Returns
 /// * Updated solution with all calls inserted
-fn k_regret_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>, k: usize) -> Vec<Vec<u32>> {
+pub fn k_regret_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>, k: usize) -> Vec<Vec<u32>> {
     let mut new_route = old_route.clone();
     let mut remaining_calls = calls_to_insert.clone();
 
@@ -920,15 +923,21 @@ fn first_random_feasible_insertion(instance: &Instance, old_route: &Vec<Vec<u32>
 */
 
 pub fn random_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(3, instance.num_calls / instance.num_vehicles );
-    let (new_route, calls) = random_removal(&old_route, k);
+    let mut rng = rng();
+    let choices = (3..((instance.num_calls / 5) + 3) as usize).step_by(10).collect::<Vec<_>>();
+    let rand_idx = rng.random_range(0..choices.len());
+    let k = choices[rand_idx];
+    let (new_route, calls) = random_removal(&old_route, k as u32);
 
     greedy_insertion(&instance, &new_route, calls)
 }
 
 pub fn worst_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(3, instance.num_calls / instance.num_vehicles);
-    let (new_route, calls) = worst_removal(&instance, &old_route, k);
+    let mut rng = rng();
+    let choices = (3..((instance.num_calls / 5) + 3) as usize).step_by(10).collect::<Vec<_>>();
+    let rand_idx = rng.random_range(0..choices.len());
+    let k = choices[rand_idx];
+    let (new_route, calls) = worst_removal(&instance, &old_route, k as u32);
 
     greedy_insertion(&instance, &new_route, calls)
 }
@@ -940,23 +949,29 @@ pub fn route_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>
 }
 
 pub fn random_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(3, instance.num_calls / instance.num_vehicles);
-    let (new_route, calls) = random_removal(&old_route, k);
+    let mut rng = rng();
+    let choices = (3..((instance.num_calls / 5) + 3) as usize).step_by(10).collect::<Vec<_>>();
+    let rand_idx = rng.random_range(0..choices.len());
+    let k = choices[rand_idx];
+    let (new_route, calls) = random_removal(&old_route, k as u32);
 
-    k_regret_insertion(&instance, &new_route, calls, 3)
+    k_regret_insertion(&instance, &new_route, calls, 4)
 }
 
 pub fn worst_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(3, instance.num_calls / instance.num_vehicles);
-    let (new_route, calls) = worst_removal(&instance, &old_route, k);
+    let mut rng = rng();
+    let choices = (3..((instance.num_calls / 5) + 3) as usize).step_by(10).collect::<Vec<_>>();
+    let rand_idx = rng.random_range(0..choices.len());
+    let k = choices[rand_idx];
+    let (new_route, calls) = worst_removal(&instance, &old_route, k as u32);
 
-    k_regret_insertion(&instance, &new_route, calls, 3)
+    k_regret_insertion(&instance, &new_route, calls, 4)
 }
 
 pub fn route_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     let (new_route, calls) = route_removal(&instance, &old_route);
 
-    k_regret_insertion(&instance, &new_route, calls, 3)
+    k_regret_insertion(&instance, &new_route, calls, 4)
 }
 
 /// Shaw removal with k-regret insertion repair
@@ -964,10 +979,13 @@ pub fn route_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u3
 /// This operator removes related calls (based on distance and time windows)
 /// and reinserts them using the k-regret heuristic
 pub fn shaw_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(4, instance.num_calls / instance.num_vehicles);
-    let (new_route, calls) = shaw_removal(&instance, &old_route, k);
+    let mut rng = rng();
+    let choices = (3..((instance.num_calls / 5) + 3) as usize).step_by(10).collect::<Vec<_>>();
+    let rand_idx = rng.random_range(0..choices.len());
+    let k = choices[rand_idx];
+    let (new_route, calls) = shaw_removal(&instance, &old_route, k as u32);
     
-    k_regret_insertion(&instance, &new_route, calls, 3)
+    k_regret_insertion(&instance, &new_route, calls, 4)
 }
 
 /// Shaw removal with greedy insertion repair
@@ -979,6 +997,25 @@ pub fn shaw_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>
     let (new_route, calls) = shaw_removal(&instance, &old_route, k);
     
     greedy_insertion(&instance, &new_route, calls)
+}
+
+pub fn random_removal_greedy_insert_10_times(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let mut resulting_solution = old_route.clone();
+    for _i in 0..10{
+        resulting_solution = random_removal_greedy_insert(&instance, &resulting_solution);
+    }
+
+    resulting_solution
+}
+
+pub fn shaw_removal_greedy_insert_10_times(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let mut resulting_solution = old_route.clone();
+
+    for _i in 0..10{
+        resulting_solution = shaw_removal_greedy_insert(&instance, &resulting_solution);
+    }
+
+    resulting_solution
 }
 
 /// Destroy and repair operator that removes random calls and reinserts them using fast feasible insertion
@@ -995,11 +1032,12 @@ pub fn shaw_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>
 pub fn random_removal_first_feasible_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     // Dynamically determine number of calls to remove - make it proportional to problem size
     // Also add some randomization to the number for exploration
-    let base_removal = u32::max(3, instance.num_vehicles / 2);
-    let max_removal = u32::max(base_removal, instance.num_calls / 5);
-    let k = rand::random_range(base_removal..max_removal + 1);
+    let mut rng = rng();
+    let choices = (3..((instance.num_calls / 5) + 3) as usize).step_by(5).collect::<Vec<_>>();
+    let rand_idx = rng.random_range(0..choices.len());
+    let k = choices[rand_idx];
     
-    let (new_route, calls) = random_removal(&old_route, k);
+    let (new_route, calls) = random_removal(&old_route, k as u32);
 
     first_random_feasible_insertion(&instance, &new_route, calls)
 }
@@ -1472,13 +1510,24 @@ fn insert_best_position(instance: &Instance, routes: &Vec<Vec<u32>>, call: u32) 
         .collect();
 
     if !results.is_empty() {
-        let (_, vehicle_idx, i1, i2) = results.iter().min_by_key(|(cost, _, _, _)| cost).unwrap();
-
+        let i1: usize;
+        let i2: usize;
+        let vehicle_idx: usize;
+        let costs: Vec<i128> = results.clone().iter().map(|(cost, _, _, _)| *cost).collect();
+        match WeightedIndex::new(&costs) {
+            Ok(weighted_index) => {
+                let idx = weighted_index.sample(&mut rng());
+                (_, vehicle_idx, i1, i2) = results[idx].clone();
+            },
+            Err(_) => {
+                (_, vehicle_idx, i1, i2) = results.iter().min_by_key(|(cost, _, _, _)| cost).unwrap().clone();
+            }
+        }
         let mut new_route = routes.clone();
-        let mut vehicle: Vec<u32> = new_route[*vehicle_idx].clone();
-        vehicle.insert(*i1, call);
-        vehicle.insert(*i2, call);
-        new_route[*vehicle_idx] = vehicle;
+        let mut vehicle: Vec<u32> = new_route[vehicle_idx].clone();
+        vehicle.insert(i1, call);
+        vehicle.insert(i2, call);
+        new_route[vehicle_idx] = vehicle;
 
         return new_route;
     }
@@ -1677,10 +1726,24 @@ fn find_best_insertion_positions(
     if !feasible_insertions.is_empty() {
         // Sort by cost (lowest first)
         feasible_insertions.sort_by_key(|(_, _, cost)| *cost);
+        let mut costs: Vec<&u128> = Vec::with_capacity(feasible_insertions.len());
+        feasible_insertions.iter().for_each(|(pickup_idx, delivery_idx, delta_cost)| {costs.push(delta_cost)});
+
+        let mut rng = rand::rng();
+
+        // Try weighted index to choose insertion
+        match WeightedIndex::new(costs) {
+            Ok(weighted_index) => {
+                return Some(feasible_insertions[weighted_index.sample(&mut rng)])
+            },
+            Err(_) => {
+                return None
+            }
+        }
 
         // Return a random insertion from the top 3 best positions (if we have that many)
         let top_n = std::cmp::min(3, feasible_insertions.len());
-        let mut rng = rand::rng();
+
         let selected_idx = rng.random_range(0..top_n);
         let (pickup_idx, delivery_idx, cost) = feasible_insertions[selected_idx];
 

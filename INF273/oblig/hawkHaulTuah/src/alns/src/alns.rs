@@ -1,17 +1,16 @@
 use checker::checker::*;
 use file_reader::parse_data::*;
-use local_search::operators::*;
-use log::info;
 use rand::distr::weighted::WeightedIndex;
 use rand::prelude::*;
 use simmulated_annealing::simmulated_annealing::{OperatorFn, find_avg_delta_with_operators};
 use std::collections::HashSet;
-use rand::{random, random_range};
+use local_search::operators::*;
+use rand::{random};
 
 pub fn alns_general(
     instance: &Instance,
     operators: &Vec<OperatorFn>,
-) -> (Vec<Vec<u32>>, u128, Vec<Vec<f64>>) {
+) -> (Vec<Vec<u32>>, u128, Vec<Vec<f64>>, Vec<u128>, Vec<u128>) {
     let mut incumbent = get_init_solution(instance.num_calls, instance.num_vehicles);
     let mut incumbent_cost = check_feasibility_and_get_cost(&instance, &incumbent).0;
     let mut best_sol = incumbent.clone();
@@ -34,17 +33,23 @@ pub fn alns_general(
     let mut iterations_since_improvement = 0;
     let mut iterations = 0;
     let max_iterations = 24900;
-    let escape_condition = 100;
-    let mut escape_size = 20;
+    let escape_condition = 500;
+    let escape_size = 5;
     let segment_size = 50;
+    
     let mut operator_use_counts = vec![0; operators.len()];
     let mut operator_points = vec![0; operators.len()];
 
     // Warmup or find avg delta for temperature for sa like acceptance criteria
     (delta_e_avg, incumbent, best_sol) = find_avg_delta_with_operators(&incumbent, &instance, 0.8, &operators, &dist);
-    let t_zero = (-1.0 * delta_e_avg) / (0.8f64).ln();
-    let t_final = 0.5;
+    let t_zero = (-1.0 * delta_e_avg) / 0.8f64.ln();
+
+    
+    // Set a lower final temperature to allow for more exploitation
+    let t_final = 0.01 * t_zero; // Lower final temperature for better convergence
     let alpha = f64::powf(t_final / t_zero, 1.0 / 24900.0);
+    
+    // Initial temperature
     let mut temp = t_zero;
     let mut p: f64 = 0.9;
     let mut delta_e: f64;
@@ -55,6 +60,7 @@ pub fn alns_general(
         weights_history.push(weights.clone());
         incumbent_history.push(incumbent_cost);
         iterations += 1;
+        iterations_since_improvement += 1;
 
         if iterations_since_improvement > escape_condition * 3 {
             incumbent = best_sol.clone();
@@ -84,7 +90,6 @@ pub fn alns_general(
         let operator = operators[operator_index];
         operator_use_counts[operator_index] += 1;
 
-
         // Apply operator
         new_solution = operator(&instance, &new_solution);
         (new_solution_cost, feasibility) = check_feasibility_and_get_cost(&instance, &new_solution);
@@ -99,16 +104,16 @@ pub fn alns_general(
             }
 
             if delta_e < 0.0 {
-                iterations_since_improvement = 0;
-
                 incumbent = new_solution;
                 incumbent_cost = new_solution_cost;
 
                 if incumbent_cost < best_cost {
+                    iterations_since_improvement = 0;
+
                     // Significant improvement - new best solution
                     let improvement = best_cost - incumbent_cost;
                     let improvement_percentage = improvement as f64 / best_cost as f64;
-
+                    
                     // Scale points based on improvement size
                     if improvement_percentage > 0.05 { // >5% improvement
                         operator_points[operator_index] += 10;
@@ -129,7 +134,9 @@ pub fn alns_general(
             }
         }
 
-        temp = temp * alpha;
+        // Use our custom cooling function to update the temperature
+        // temp = cool(iterations, max_iterations, t_zero, t_final);
+        temp *- alpha;
 
         if iterations % segment_size == 0 {
             let sum_points: i32 = operator_points.iter().sum();
@@ -166,14 +173,8 @@ pub fn alns_general(
         }
     }
 
-    // for c in best_history {
-    //     print!("{},", c);
-    // }
-    // println!();
-    // for c in incumbent_history {
-    //     print!("{},", c);
-    // }
-    (best_sol, best_cost, weights_history)
+    // Return histories along with the solution
+    (best_sol, best_cost, weights_history, best_history, incumbent_history)
 }
 
 fn escape(
@@ -186,7 +187,7 @@ fn escape(
     let mut end_solution = solution.clone();
 
     for _i in 0..escape_iterations {
-        let new = operator(&instance, &end_solution);
+        let new = k_reinsert(&instance, &end_solution);
         let (cost, feasibility) = check_feasibility_and_get_cost(&instance, &new);
         if !feasibility {
             continue;
@@ -200,6 +201,32 @@ fn escape(
     }
 
     end_solution
+}
+
+/// Temperature cooling function for the ALNS algorithm
+/// Returns the new temperature based on the current iteration
+fn cool(
+    current_iteration: usize,
+    max_iterations: usize,
+    t_zero: f64,
+    t_final: f64
+) -> f64 {
+    // Calculate progress as a value between 0 and 1
+    let progress = current_iteration as f64 / max_iterations as f64;
+    
+    // More aggressive exponential cooling schedule
+    // Start high but cool continuously throughout the process
+    
+    // Use a modified exponential cooling that cools faster
+    // This gives a good balance of exploration and exploitation
+    let cooling_exponent = 10.0; // Higher value = faster cooling
+    let normalized_temp = f64::exp(-cooling_exponent * progress);
+    
+    // Scale between initial and final temperature
+    let temp = t_final + (t_zero - t_final) * normalized_temp;
+    
+    // Ensure we don't go below t_final
+    f64::max(temp, t_final)
 }
 
 fn get_init_solution(num_calls: u32, num_vehicles: u32) -> Vec<Vec<u32>> {
