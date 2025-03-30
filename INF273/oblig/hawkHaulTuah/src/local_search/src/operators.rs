@@ -234,10 +234,7 @@ pub fn one_reinsert_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>
 }
 
 pub fn k_reinsert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let mut rng = rng();
-    let choices = (3..((instance.num_calls / 3) + 3) as usize).step_by(10).collect::<Vec<_>>();
-    let rand_idx = rng.random_range(0..choices.len());
-    let k = choices[rand_idx];
+    let k = 10;
 
     let mut new_sol = old_route.clone();
 
@@ -678,7 +675,7 @@ pub fn shaw_removal(instance: &Instance, old_route: &Vec<Vec<u32>>, k: u32) -> (
         
         // Normalize travel cost (lower is better)
         // We'll use a simple normalization based on a reasonable maximum distance
-        let max_expected_cost = 1000_u128; // Adjust based on your problem
+        let max_expected_cost = 1000_u128;
         let distance_score = min_cost as f64 / max_expected_cost as f64;
         
         // Calculate time window overlap for pickup and delivery
@@ -923,20 +920,15 @@ fn first_random_feasible_insertion(instance: &Instance, old_route: &Vec<Vec<u32>
 */
 
 pub fn random_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let mut rng = rng();
-    let choices = (3..((instance.num_calls / 5) + 3) as usize).step_by(10).collect::<Vec<_>>();
-    let rand_idx = rng.random_range(0..choices.len());
-    let k = choices[rand_idx];
+    let mut k = 3.max(instance.num_vehicles);
     let (new_route, calls) = random_removal(&old_route, k as u32);
 
     greedy_insertion(&instance, &new_route, calls)
 }
 
 pub fn worst_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let mut rng = rng();
-    let choices = (3..((instance.num_calls / 5) + 3) as usize).step_by(10).collect::<Vec<_>>();
-    let rand_idx = rng.random_range(0..choices.len());
-    let k = choices[rand_idx];
+    let mut k = 3.max(instance.num_vehicles);
+
     let (new_route, calls) = worst_removal(&instance, &old_route, k as u32);
 
     greedy_insertion(&instance, &new_route, calls)
@@ -960,7 +952,7 @@ pub fn random_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u
 
 pub fn worst_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     let mut rng = rng();
-    let choices = (3..((instance.num_calls / 5) + 3) as usize).step_by(10).collect::<Vec<_>>();
+    let choices = (3..=((instance.num_calls / 7) + 3) as usize).step_by(10).collect::<Vec<_>>();
     let rand_idx = rng.random_range(0..choices.len());
     let k = choices[rand_idx];
     let (new_route, calls) = worst_removal(&instance, &old_route, k as u32);
@@ -993,8 +985,8 @@ pub fn shaw_removal_k_regret_insert(instance: &Instance, old_route: &Vec<Vec<u32
 /// This operator removes related calls (based on distance and time windows)
 /// and reinserts them using greedy insertion
 pub fn shaw_removal_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let k = u32::max(4, instance.num_calls / instance.num_vehicles);
-    let (new_route, calls) = shaw_removal(&instance, &old_route, k);
+    let mut k = 3.max(instance.num_vehicles);
+    let (new_route, calls) = shaw_removal(&instance, &old_route, k as u32);
     
     greedy_insertion(&instance, &new_route, calls)
 }
@@ -1032,10 +1024,7 @@ pub fn shaw_removal_greedy_insert_10_times(instance: &Instance, old_route: &Vec<
 pub fn random_removal_first_feasible_insert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     // Dynamically determine number of calls to remove - make it proportional to problem size
     // Also add some randomization to the number for exploration
-    let mut rng = rng();
-    let choices = (3..((instance.num_calls / 5) + 3) as usize).step_by(5).collect::<Vec<_>>();
-    let rand_idx = rng.random_range(0..choices.len());
-    let k = choices[rand_idx];
+    let mut k = 3.max(instance.num_vehicles);
     
     let (new_route, calls) = random_removal(&old_route, k as u32);
 

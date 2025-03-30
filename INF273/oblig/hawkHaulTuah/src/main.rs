@@ -54,16 +54,21 @@ fn main() {
 
     // Create a diverse set of operators for ALNS
     let my_operators = vec![
-        one_reinsert_focus_dummy_random_feasible as OperatorFn,
-        one_reinsert_probability as OperatorFn,
-        two_call_swap as OperatorFn,
-        reinsert_sub_route as OperatorFn,
-        random_removal_k_regret_insert as OperatorFn,
-        route_removal_k_regret_insert as OperatorFn,
-        shaw_removal_k_regret_insert as OperatorFn,
+        // one_reinsert_focus_dummy_random_feasible as OperatorFn,
+        // one_reinsert_probability as OperatorFn,
+        random_removal_greedy_insert as OperatorFn,
+        worst_removal_greedy_insert as OperatorFn,
+        route_removal_greedy_insert as OperatorFn,
+        one_reinsert_greedy_insert as OperatorFn,
+        shaw_removal_greedy_insert as OperatorFn,
+        //worst_removal_greedy_insert as OperatorFn,
+        // k_reinsert as OperatorFn,
+        //random_removal_k_regret_insert as OperatorFn,
+        // route_removal_k_regret_insert as OperatorFn,
+        // shaw_removal_k_regret_insert as OperatorFn,
         random_removal_first_feasible_insert as OperatorFn,
-        random_removal_greedy_insert_10_times as OperatorFn,
-        shaw_removal_greedy_insert_10_times as OperatorFn,
+        // random_removal_greedy_insert_10_times as OperatorFn,
+        // shaw_removal_greedy_insert_10_times as OperatorFn,
     ];
 
     // HOw many times reaching each optima for 10 iteratins
@@ -80,6 +85,7 @@ fn main() {
         run_alns_report(filename, true, &my_operators);
     }
 
+
     // for filename in filenames {
     //     run_local_search_report(filename, true);
     // }
@@ -92,7 +98,7 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
     let instance = read_file(filename);
     let outsource_sol = get_init_solution(instance.num_calls, instance.num_vehicles);
 
-    let results: Vec<(Vec<Vec<u32>>, u128, Vec<Vec<f64>>, Vec<u128>, Vec<u128>)>;
+    let results: Vec<(Vec<Vec<u32>>, u128, Vec<Vec<f64>>, Vec<u128>, Vec<u128>, Vec<Vec<f64>>, Vec<f64>, Vec<f64>, Vec<usize>)>;
     let now = Instant::now();
     
     if parallel {
@@ -113,19 +119,37 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
             .collect();
     }
     
-    // Save the first run's history to a file
-    if let Some((_, _, _, best_history, incumbent_history)) = results.first() {
-        save_solution_history(filename, best_history, incumbent_history);
+    // Find best solution by cost
+    let best_result = results.iter().min_by_key(|(_, cost, _, _, _, _, _, _, _)| *cost).unwrap();
+    let (best_solution, best_cost, weights_history, best_history, incumbent_history, 
+         operator_delta_costs, temperatures, probabilities, prob_iteration_indices) = best_result;
+    
+    // Save all data to files
+    save_solution_history(filename, best_history, incumbent_history);
+    save_weights_history(filename, weights_history);
+    save_operator_delta_costs(filename, operator_delta_costs);
+    save_temperature_history(filename, temperatures);
+    save_probability_history(filename, probabilities, prob_iteration_indices);
+    
+    // Create a frequency map of solutions
+    let mut solution_counts: std::collections::HashMap<u128, usize> = std::collections::HashMap::new();
+    let mut solution_examples: std::collections::HashMap<u128, Vec<Vec<u32>>> = std::collections::HashMap::new();
+    
+    for (sol, cost, _, _, _, _, _, _, _) in &results {
+        *solution_counts.entry(*cost).or_insert(0) += 1;
+        
+        // Store an example solution for each cost (we just keep the first one we find)
+        if !solution_examples.contains_key(cost) {
+            solution_examples.insert(*cost, sol.clone());
+        }
     }
+    
+    // Log the solution frequencies
+    save_solution_frequencies(filename, &solution_counts, &solution_examples, best_solution, *best_cost);
 
     let total_time = Instant::now().duration_since(now).as_millis();
-    let total_sum: u128 = results.iter().map(|(_, cost, _, _, _)| *cost).sum();
+    let total_sum: u128 = results.iter().map(|(_, cost, _, _, _, _, _, _, _)| *cost).sum();
 
-    let (best_solution, best_cost, weights_history, _, _) =
-        results.iter().min_by_key(|(_, cost, _, _, _)| *cost).unwrap();
-    // for w in weights_history {
-    //     println!("{:?}", w);
-    // }
     let init_cost = check_feasibility_and_get_cost(&instance, &outsource_sol).0;
     let avg_cost = total_sum / (if parallel { 10 } else { 1 });
     let avg_time = total_time as f64 / 10.0;
@@ -475,6 +499,239 @@ fn save_solution_history(
     
     println!("Solution history written to {}", output_filename);
 }
+
+fn save_weights_history(
+    filename: &str,
+    weights_history: &Vec<Vec<f64>>
+) {
+    // Extract the problem name from the input file path
+    let file_base_name = std::path::Path::new(filename)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
+    
+    let output_filename = format!("output/{}_weights.csv", file_base_name);
+    
+    // Create output directory if it doesn't exist
+    fs::create_dir_all("output").expect("Failed to create output directory");
+    
+    // Create and write to the file
+    let mut file = fs::File::create(&output_filename)
+        .expect("Failed to create output file");
+    
+    // Get number of operators
+    if let Some(first_weights) = weights_history.first() {
+        let num_operators = first_weights.len();
+        
+        // Write CSV header
+        let mut header = String::from("iteration");
+        for i in 0..num_operators {
+            header.push_str(&format!(",operator_{}", i));
+        }
+        writeln!(file, "{}", header).expect("Failed to write header");
+        
+        // Write each iteration's data
+        for (i, weights) in weights_history.iter().enumerate() {
+            let mut row = format!("{}", i);
+            for weight in weights {
+                row.push_str(&format!(",{}", weight));
+            }
+            writeln!(file, "{}", row).expect("Failed to write data row");
+        }
+        
+        println!("Weights history written to {}", output_filename);
+    } else {
+        println!("No weights history to save");
+    }
+}
+
+fn save_operator_delta_costs(
+    filename: &str,
+    operator_delta_costs: &Vec<Vec<f64>>
+) {
+    // Extract the problem name from the input file path
+    let file_base_name = std::path::Path::new(filename)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
+    
+    let output_filename = format!("output/{}_delta_costs.csv", file_base_name);
+    
+    // Create output directory if it doesn't exist
+    fs::create_dir_all("output").expect("Failed to create output directory");
+    
+    // Create and write to the file
+    let mut file = fs::File::create(&output_filename)
+        .expect("Failed to create output file");
+    
+    // Get number of operators
+    if let Some(first_deltas) = operator_delta_costs.first() {
+        let num_operators = first_deltas.len();
+        
+        // Write CSV header
+        let mut header = String::from("iteration");
+        for i in 0..num_operators {
+            header.push_str(&format!(",operator_{}", i));
+        }
+        writeln!(file, "{}", header).expect("Failed to write header");
+        
+        // Write each iteration's data
+        for (i, deltas) in operator_delta_costs.iter().enumerate() {
+            let mut row = format!("{}", i);
+            for delta in deltas {
+                row.push_str(&format!(",{}", delta));
+            }
+            writeln!(file, "{}", row).expect("Failed to write data row");
+        }
+        
+        println!("Operator delta costs written to {}", output_filename);
+    } else {
+        println!("No operator delta costs to save");
+    }
+}
+
+fn save_temperature_history(
+    filename: &str,
+    temperatures: &Vec<f64>
+) {
+    // Extract the problem name from the input file path
+    let file_base_name = std::path::Path::new(filename)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
+    
+    let output_filename = format!("output/{}_temperature.csv", file_base_name);
+    
+    // Create output directory if it doesn't exist
+    fs::create_dir_all("output").expect("Failed to create output directory");
+    
+    // Create and write to the file
+    let mut file = fs::File::create(&output_filename)
+        .expect("Failed to create output file");
+    
+    // Write CSV header
+    writeln!(file, "iteration,temperature").expect("Failed to write header");
+    
+    // Write each iteration's data
+    for (i, temp) in temperatures.iter().enumerate() {
+        writeln!(file, "{},{}", i, temp).expect("Failed to write data row");
+    }
+    
+    println!("Temperature history written to {}", output_filename);
+}
+
+fn save_probability_history(
+    filename: &str,
+    probabilities: &Vec<f64>,
+    iterations: &Vec<usize>
+) {
+    // Extract the problem name from the input file path
+    let file_base_name = std::path::Path::new(filename)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
+    
+    let output_filename = format!("output/{}_probability.csv", file_base_name);
+    
+    // Create output directory if it doesn't exist
+    fs::create_dir_all("output").expect("Failed to create output directory");
+    
+    // Create and write to the file
+    let mut file = fs::File::create(&output_filename)
+        .expect("Failed to create output file");
+    
+    // Write CSV header
+    writeln!(file, "iteration,probability").expect("Failed to write header");
+    
+    // Write each probability data point with its iteration
+    for (i, iteration) in iterations.iter().enumerate() {
+        if i < probabilities.len() {
+            writeln!(file, "{},{}", iteration, probabilities[i])
+                .expect("Failed to write data row");
+        }
+    }
+    
+    println!("Probability history written to {}", output_filename);
+}
+
+fn save_solution_frequencies(
+    filename: &str,
+    solution_counts: &std::collections::HashMap<u128, usize>,
+    solution_examples: &std::collections::HashMap<u128, Vec<Vec<u32>>>,
+    best_solution: &Vec<Vec<u32>>,
+    best_cost: u128
+) {
+    // Extract the problem name from the input file path
+    let file_base_name = std::path::Path::new(filename)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("unknown");
+    
+    let output_filename = format!("output/{}_solutions.txt", file_base_name);
+    
+    // Create output directory if it doesn't exist
+    fs::create_dir_all("output").expect("Failed to create output directory");
+    
+    // Create and write to the file
+    let mut file = fs::File::create(&output_filename)
+        .expect("Failed to create output file");
+    
+    // Write file header
+    writeln!(file, "ALNS Solutions for {}", filename).expect("Failed to write header");
+    writeln!(file, "==================================").expect("Failed to write separator");
+    writeln!(file, "").expect("Failed to write newline");
+    
+    // Convert solution counts to a vector for sorting
+    let mut counts_vec: Vec<(u128, usize)> = solution_counts.iter()
+        .map(|(cost, count)| (*cost, *count))
+        .collect();
+    
+    // Sort by count (descending) and then by cost (ascending)
+    counts_vec.sort_by(|(cost_a, count_a), (cost_b, count_b)| {
+        count_b.cmp(count_a).then_with(|| cost_a.cmp(cost_b))
+    });
+    
+    // Write the frequency table
+    writeln!(file, "Solution frequencies (10 runs):").expect("Failed to write section header");
+    writeln!(file, "-----------------------------").expect("Failed to write separator");
+    writeln!(file, "Cost      | Frequency | Percentage").expect("Failed to write table header");
+    writeln!(file, "----------|-----------|------------").expect("Failed to write separator");
+    
+    for (cost, count) in &counts_vec {
+        let percentage = (*count as f64 / 10.0) * 100.0;
+        writeln!(file, "{:<10} | {:<9} | {:.1}%", cost, count, percentage)
+            .expect("Failed to write table row");
+    }
+    
+    writeln!(file, "").expect("Failed to write newline");
+    
+    // Write information about the best solution
+    writeln!(file, "Best solution found (cost: {}):", best_cost).expect("Failed to write best solution header");
+    writeln!(file, "-----------------------------").expect("Failed to write separator");
+    writeln!(file, "{:?}", concat_solution(best_solution)).expect("Failed to write best solution");
+    
+    writeln!(file, "").expect("Failed to write newline");
+    
+    // Write all solutions with their costs
+    writeln!(file, "All unique solutions:").expect("Failed to write all solutions header");
+    writeln!(file, "-----------------------------").expect("Failed to write separator");
+    
+    for (cost, solution) in counts_vec.iter()
+        .filter_map(|(cost, _)| solution_examples.get(cost).map(|sol| (cost, sol))) 
+    {
+        writeln!(file, "Cost: {}", cost).expect("Failed to write solution cost");
+        writeln!(file, "Frequency: {}/{} runs ({}%)", 
+                solution_counts.get(cost).unwrap_or(&0), 
+                10,
+                (solution_counts.get(cost).unwrap_or(&0) * 10)
+            ).expect("Failed to write solution frequency");
+        writeln!(file, "Solution: {:?}", concat_solution(solution)).expect("Failed to write solution");
+        writeln!(file, "").expect("Failed to write newline");
+    }
+    
+    println!("Solution frequencies written to {}", output_filename);
+}
+
 
 fn concat_solution(solution: &Vec<Vec<u32>>) -> Vec<u32> {
     let mut res = Vec::new();

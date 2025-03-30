@@ -10,7 +10,7 @@ use rand::{random};
 pub fn alns_general(
     instance: &Instance,
     operators: &Vec<OperatorFn>,
-) -> (Vec<Vec<u32>>, u128, Vec<Vec<f64>>, Vec<u128>, Vec<u128>) {
+) -> (Vec<Vec<u32>>, u128, Vec<Vec<f64>>, Vec<u128>, Vec<u128>, Vec<Vec<f64>>, Vec<f64>, Vec<f64>, Vec<usize>) {
     let mut incumbent = get_init_solution(instance.num_calls, instance.num_vehicles);
     let mut incumbent_cost = check_feasibility_and_get_cost(&instance, &incumbent).0;
     let mut best_sol = incumbent.clone();
@@ -25,15 +25,22 @@ pub fn alns_general(
     let mut dist = WeightedIndex::new(&weights).unwrap();
     let mut rng = rand::rng();
 
-    let mut weights_history: Vec<Vec<f64>> = Vec::new();
-    let mut best_history: Vec<u128> = Vec::new();
-    let mut incumbent_history: Vec<u128> = Vec::new();
+    // Track histories
+    let mut weights_history: Vec<Vec<f64>> = Vec::with_capacity(24900);
+    let mut best_history: Vec<u128> = Vec::with_capacity(24900);
+    let mut incumbent_history: Vec<u128> = Vec::with_capacity(24900);
+    
+    // New tracking data
+    let mut operator_delta_costs: Vec<Vec<f64>> = Vec::new();
+    let mut temperatures: Vec<f64> = Vec::new();
+    let mut probabilities: Vec<f64> = Vec::new();
+    let mut prob_iteration_indices: Vec<usize> = Vec::new();
 
-    let mut r = 0.1;
+    let mut r = 0.2;
     let mut iterations_since_improvement = 0;
     let mut iterations = 0;
     let max_iterations = 24900;
-    let escape_condition = 500;
+    let escape_condition = 200;
     let escape_size = 5;
     let segment_size = 50;
     
@@ -53,6 +60,10 @@ pub fn alns_general(
     let mut temp = t_zero;
     let mut p: f64 = 0.9;
     let mut delta_e: f64;
+    
+    // Initialize tracking for the first iteration
+    operator_delta_costs.push(vec![0.0; operators.len()]);
+    temperatures.push(temp);
 
     while iterations < max_iterations {
         r = 0.3 * (1.0 - iterations as f64 / max_iterations as f64);
@@ -94,8 +105,19 @@ pub fn alns_general(
         new_solution = operator(&instance, &new_solution);
         (new_solution_cost, feasibility) = check_feasibility_and_get_cost(&instance, &new_solution);
         delta_e = new_solution_cost as f64 - incumbent_cost as f64;
+        
+        // Store delta cost for this operator at this iteration
+        let mut deltas = vec![0.0; operators.len()];
+        deltas[operator_index] = delta_e;
+        operator_delta_costs.push(deltas);
 
         p = std::f64::consts::E.powf((-1.0 * delta_e) / temp);
+        
+        // Track probability p when delta_e > 0
+        if delta_e > 0.0 && feasibility {
+            probabilities.push(p);
+            prob_iteration_indices.push(iterations);
+        }
 
         if feasibility {
             if !seen_solutions.contains(&new_solution) {
@@ -115,6 +137,7 @@ pub fn alns_general(
                     let improvement_percentage = improvement as f64 / best_cost as f64;
                     
                     // Scale points based on improvement size
+                    /*
                     if improvement_percentage > 0.05 { // >5% improvement
                         operator_points[operator_index] += 10;
                     } else if improvement_percentage > 0.01 { // >1% improvement
@@ -122,6 +145,8 @@ pub fn alns_general(
                     } else {
                         operator_points[operator_index] += 4; // Minor improvement
                     }
+                    */
+                    operator_points[operator_index] += 4;
 
                     best_cost = incumbent_cost;
                     best_sol = incumbent.clone();
@@ -136,7 +161,8 @@ pub fn alns_general(
 
         // Use our custom cooling function to update the temperature
         // temp = cool(iterations, max_iterations, t_zero, t_final);
-        temp *- alpha;
+        temp *= alpha;
+        temperatures.push(temp);
 
         if iterations % segment_size == 0 {
             let sum_points: i32 = operator_points.iter().sum();
@@ -148,7 +174,7 @@ pub fn alns_general(
                     weights[weights_i] * (1.0 - r)
                         + r * (operator_points[weights_i] as f64
                             / operator_use_counts[weights_i] as f64),
-                    rng.random_range(0.05 ..0.25),
+                    0.05,
                 );
             }
 
@@ -174,7 +200,8 @@ pub fn alns_general(
     }
 
     // Return histories along with the solution
-    (best_sol, best_cost, weights_history, best_history, incumbent_history)
+    (best_sol, best_cost, weights_history, best_history, incumbent_history, 
+     operator_delta_costs, temperatures, probabilities, prob_iteration_indices)
 }
 
 fn escape(
@@ -187,7 +214,7 @@ fn escape(
     let mut end_solution = solution.clone();
 
     for _i in 0..escape_iterations {
-        let new = k_reinsert(&instance, &end_solution);
+        let new = random_removal_first_feasible_insert(&instance, &end_solution);
         let (cost, feasibility) = check_feasibility_and_get_cost(&instance, &new);
         if !feasibility {
             continue;
