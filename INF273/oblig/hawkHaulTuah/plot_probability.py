@@ -45,7 +45,7 @@ def plot_probability(probability_file, temperature_file=None, output_dir="plots"
         ax2.set_ylabel('Temperature', fontsize=12, color='red')
         ax2.tick_params(axis='y', labelcolor='red')
         # Set y-axis to log scale for temperature
-        ax2.set_yscale('log')
+        # ax2.set_yscale('log')
         
         # Add separate legend for temperature
         lines2, labels2 = ax2.get_legend_handles_labels()

@@ -89,7 +89,7 @@ def plot_delta_costs(delta_costs_file, output_dir="plots", show_plots=False):
     legend.get_frame().set_linewidth(0.5)
     
     # Add grid with lighter styling
-    plt.grid(True, linestyle='--', alpha=0.3, color='gray')
+    #plt.grid(True, linestyle='--', alpha=0.3, color='gray')
     
     # Improve tick labels
     plt.xticks(fontsize=10)

@@ -36,13 +36,14 @@ pub fn alns_general(
     let mut probabilities: Vec<f64> = Vec::new();
     let mut prob_iteration_indices: Vec<usize> = Vec::new();
 
+    let mut d = 0.2;
     let mut r = 0.2;
     let mut iterations_since_improvement = 0;
     let mut iterations = 0;
-    let max_iterations = 24900;
-    let escape_condition = 200;
-    let escape_size = 5;
-    let segment_size = 50;
+    let max_iterations = 9900;
+    let escape_condition = 500;
+    let mut escape_size = 1;
+    let segment_size = 100;
     
     let mut operator_use_counts = vec![0; operators.len()];
     let mut operator_points = vec![0; operators.len()];
@@ -53,9 +54,9 @@ pub fn alns_general(
 
     
     // Set a lower final temperature to allow for more exploitation
-    let t_final = 0.01 * t_zero; // Lower final temperature for better convergence
-    let alpha = f64::powf(t_final / t_zero, 1.0 / 24900.0);
-    
+    let t_final = 0.01; // Lower final temperature for better convergence
+    let alpha = f64::powf(t_final / t_zero, 1.0 / max_iterations as f64);
+
     // Initial temperature
     let mut temp = t_zero;
     let mut p: f64 = 0.9;
@@ -66,12 +67,13 @@ pub fn alns_general(
     temperatures.push(temp);
 
     while iterations < max_iterations {
-        r = 0.3 * (1.0 - iterations as f64 / max_iterations as f64);
         best_history.push(best_cost);
         weights_history.push(weights.clone());
         incumbent_history.push(incumbent_cost);
         iterations += 1;
         iterations_since_improvement += 1;
+        d = 0.2 * ((max_iterations - iterations) as f64 / max_iterations as f64) * best_cost as f64;
+
 
         if iterations_since_improvement > escape_condition * 3 {
             incumbent = best_sol.clone();
@@ -86,12 +88,14 @@ pub fn alns_general(
             // escape_size += 1;
             (incumbent_cost, _) = check_feasibility_and_get_cost(&instance, &incumbent);
 
+
+
             if incumbent_cost < best_cost {
                 best_cost = incumbent_cost;
                 best_sol = incumbent.clone();
-                iterations_since_improvement = 0
+                iterations_since_improvement = 0;
             } else {
-                // escape_size = (escape_size as f64 * 1.5) as usize;
+                escape_size = (escape_size as f64 * 1.5) as usize;
             }
         }
 
@@ -153,7 +157,7 @@ pub fn alns_general(
                 } else {
                     operator_points[operator_index] += 2;
                 }
-            } else if random::<f64>() < p {
+            } else if (incumbent_cost as f64) < (best_cost as f64 * d) {
                 incumbent = new_solution;
                 incumbent_cost = new_solution_cost;
             }
@@ -214,7 +218,7 @@ fn escape(
     let mut end_solution = solution.clone();
 
     for _i in 0..escape_iterations {
-        let new = random_removal_first_feasible_insert(&instance, &end_solution);
+        let new = one_reinsert_probability(&instance, &end_solution);
         let (cost, feasibility) = check_feasibility_and_get_cost(&instance, &new);
         if !feasibility {
             continue;
