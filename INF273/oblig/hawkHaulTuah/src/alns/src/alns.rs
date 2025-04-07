@@ -10,7 +10,7 @@ use rand::{random};
 pub fn alns_general(
     instance: &Instance,
     operators: &Vec<OperatorFn>,
-) -> (Vec<Vec<u32>>, u128, Vec<Vec<f64>>, Vec<u128>, Vec<u128>, Vec<Vec<f64>>, Vec<f64>, Vec<f64>, Vec<usize>) {
+) -> (Vec<Vec<u32>>, u128, Vec<Vec<f64>>, Vec<u128>, Vec<u128>, Vec<Vec<f64>>) {
     let mut incumbent = get_init_solution(instance.num_calls, instance.num_vehicles);
     let mut incumbent_cost = check_feasibility_and_get_cost(&instance, &incumbent).0;
     let mut best_sol = incumbent.clone();
@@ -18,7 +18,6 @@ pub fn alns_general(
     let mut new_solution: Vec<Vec<u32>>;
     let mut new_solution_cost;
     let mut feasibility;
-    let delta_e_avg: f64;
     let mut seen_solutions: HashSet<Vec<Vec<u32>>> = HashSet::new();
 
     let mut weights: Vec<f64> = vec![1.0 / operators.len() as f64; operators.len()];
@@ -32,9 +31,6 @@ pub fn alns_general(
     
     // New tracking data
     let mut operator_delta_costs: Vec<Vec<f64>> = Vec::new();
-    let mut temperatures: Vec<f64> = Vec::new();
-    let mut probabilities: Vec<f64> = Vec::new();
-    let mut prob_iteration_indices: Vec<usize> = Vec::new();
 
     let mut d = 0.2;
     let mut r = 0.2;
@@ -48,23 +44,10 @@ pub fn alns_general(
     let mut operator_use_counts = vec![0; operators.len()];
     let mut operator_points = vec![0; operators.len()];
 
-    // Warmup or find avg delta for temperature for sa like acceptance criteria
-    (delta_e_avg, incumbent, best_sol) = find_avg_delta_with_operators(&incumbent, &instance, 0.8, &operators, &dist);
-    let t_zero = (-1.0 * delta_e_avg) / 0.8f64.ln();
-
-    
-    // Set a lower final temperature to allow for more exploitation
-    let t_final = 0.01; // Lower final temperature for better convergence
-    let alpha = f64::powf(t_final / t_zero, 1.0 / max_iterations as f64);
-
-    // Initial temperature
-    let mut temp = t_zero;
-    let mut p: f64 = 0.9;
     let mut delta_e: f64;
     
     // Initialize tracking for the first iteration
     operator_delta_costs.push(vec![0.0; operators.len()]);
-    temperatures.push(temp);
 
     while iterations < max_iterations {
         best_history.push(best_cost);
@@ -87,7 +70,6 @@ pub fn alns_general(
             incumbent = escape(&instance, &incumbent, &operator, best_cost, escape_size);
             // escape_size += 1;
             (incumbent_cost, _) = check_feasibility_and_get_cost(&instance, &incumbent);
-
 
 
             if incumbent_cost < best_cost {
@@ -114,14 +96,6 @@ pub fn alns_general(
         let mut deltas = vec![0.0; operators.len()];
         deltas[operator_index] = delta_e;
         operator_delta_costs.push(deltas);
-
-        p = std::f64::consts::E.powf((-1.0 * delta_e) / temp);
-        
-        // Track probability p when delta_e > 0
-        if delta_e > 0.0 && feasibility {
-            probabilities.push(p);
-            prob_iteration_indices.push(iterations);
-        }
 
         if feasibility {
             if !seen_solutions.contains(&new_solution) {
@@ -163,11 +137,6 @@ pub fn alns_general(
             }
         }
 
-        // Use our custom cooling function to update the temperature
-        // temp = cool(iterations, max_iterations, t_zero, t_final);
-        temp *= alpha;
-        temperatures.push(temp);
-
         if iterations % segment_size == 0 {
             let sum_points: i32 = operator_points.iter().sum();
             // Update weights and counts
@@ -205,7 +174,7 @@ pub fn alns_general(
 
     // Return histories along with the solution
     (best_sol, best_cost, weights_history, best_history, incumbent_history, 
-     operator_delta_costs, temperatures, probabilities, prob_iteration_indices)
+     operator_delta_costs)
 }
 
 fn escape(

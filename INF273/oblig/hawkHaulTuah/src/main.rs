@@ -60,10 +60,10 @@ fn main() {
         one_reinsert_greedy_insert as OperatorFn,
         two_call_swap as OperatorFn,
         // random_removal_greedy_insert as OperatorFn,
-        // worst_removal_greedy_insert as OperatorFn,
-        // route_removal_greedy_insert as OperatorFn,
+        //worst_removal_greedy_insert as OperatorFn,
+        // // route_removal_greedy_insert as OperatorFn,
         // shaw_removal_greedy_insert as OperatorFn,
-        // k_reinsert_real as OperatorFn,
+        k_reinsert_real as OperatorFn,
         // random_removal_k_regret_insert as OperatorFn,
         // route_removal_k_regret_insert as OperatorFn,
         // shaw_removal_k_regret_insert as OperatorFn,
@@ -100,7 +100,7 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
     let instance = read_file(filename);
     let outsource_sol = get_init_solution(instance.num_calls, instance.num_vehicles);
 
-    let results: Vec<(Vec<Vec<u32>>, u128, Vec<Vec<f64>>, Vec<u128>, Vec<u128>, Vec<Vec<f64>>, Vec<f64>, Vec<f64>, Vec<usize>)>;
+    let results: Vec<(Vec<Vec<u32>>, u128, Vec<Vec<f64>>, Vec<u128>, Vec<u128>, Vec<Vec<f64>>)>;
     let now = Instant::now();
     
     if parallel {
@@ -122,22 +122,20 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
     }
     
     // Find best solution by cost
-    let best_result = results.iter().min_by_key(|(_, cost, _, _, _, _, _, _, _)| *cost).unwrap();
+    let best_result = results.iter().min_by_key(|(_, cost, _, _, _, _)| *cost).unwrap();
     let (best_solution, best_cost, weights_history, best_history, incumbent_history, 
-         operator_delta_costs, temperatures, probabilities, prob_iteration_indices) = best_result;
+         operator_delta_costs) = best_result;
     
     // Save all data to files
     save_solution_history(filename, best_history, incumbent_history);
     save_weights_history(filename, weights_history);
     save_operator_delta_costs(filename, operator_delta_costs);
-    save_temperature_history(filename, temperatures);
-    save_probability_history(filename, probabilities, prob_iteration_indices);
-    
+
     // Create a frequency map of solutions
     let mut solution_counts: std::collections::HashMap<u128, usize> = std::collections::HashMap::new();
     let mut solution_examples: std::collections::HashMap<u128, Vec<Vec<u32>>> = std::collections::HashMap::new();
     
-    for (sol, cost, _, _, _, _, _, _, _) in &results {
+    for (sol, cost, _, _, _, _) in &results {
         *solution_counts.entry(*cost).or_insert(0) += 1;
         
         // Store an example solution for each cost (we just keep the first one we find)
@@ -150,7 +148,7 @@ fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) 
     save_solution_frequencies(filename, &solution_counts, &solution_examples, best_solution, *best_cost);
 
     let total_time = Instant::now().duration_since(now).as_millis();
-    let total_sum: u128 = results.iter().map(|(_, cost, _, _, _, _, _, _, _)| *cost).sum();
+    let total_sum: u128 = results.iter().map(|(_, cost, _, _, _, _)| *cost).sum();
 
     let init_cost = check_feasibility_and_get_cost(&instance, &outsource_sol).0;
     let avg_cost = total_sum / (if parallel { 10 } else { 1 });

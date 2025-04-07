@@ -341,7 +341,7 @@ pub fn reinsert_sub_route(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec
     // Only sample a subset of vehicles to improve performance
     let mut vehicle_indices: Vec<usize> = (0..old_route.len() - 1).collect(); // Skip outsource vehicle
     vehicle_indices.shuffle(&mut rng);
-    let vehicle_sample = &vehicle_indices[0..std::cmp::min(15, vehicle_indices.len())];
+    let vehicle_sample = &vehicle_indices[0..std::cmp::min(90, vehicle_indices.len())];
 
     // For each sampled vehicle, find valid subroutes
     for &vehicle_idx in vehicle_sample {
@@ -354,7 +354,7 @@ pub fn reinsert_sub_route(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec
         }
 
         // Find valid subroutes more efficiently
-        let max_subroute_length = std::cmp::min(15, vehicle.len());
+        let max_subroute_length = std::cmp::min(90, vehicle.len());
 
         for subroute_len in 2..=max_subroute_length {
             for start in 0..=vehicle.len() - subroute_len {
@@ -492,7 +492,7 @@ pub fn two_call_swap(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<
     }
 
     // Try multiple combinations for better results
-    let num_attempts = 30;
+    let num_attempts = 100;
 
     for _ in 0..num_attempts {
         // Select two different vehicles with probability based on route length
@@ -1834,6 +1834,7 @@ fn find_best_insertion_positions(
 
         let mut rng = rand::rng();
 
+        /*
         // Try weighted index to choose insertion
         match WeightedIndex::new(costs) {
             Ok(weighted_index) => {
@@ -1842,7 +1843,7 @@ fn find_best_insertion_positions(
             Err(_) => {
                 return None
             }
-        }
+        }*/
 
         // Return a random insertion from the top 3 best positions (if we have that many)
         let top_n = std::cmp::min(3, feasible_insertions.len());

@@ -33,12 +33,9 @@ def plot_delta_costs(delta_costs_file, output_dir="plots", show_plots=False):
     
     # Define the actual operator names in the correct order
     operator_names = [
-        "random_removal_greedy_insert",
-        "worst_removal_greedy_insert",
-        "route_removal_greedy_insert",
+        "Reinsert sub route",
         "one_reinsert_greedy_insert",
-        "shaw_removal_greedy_insert",
-        "random_removal_first_feasible_insert"
+        "two call swap"
     ]
     
     # Create a mapping of column indices to operator names
