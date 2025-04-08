@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+instance = { path = "./src/instance" }
+solution = { path = "./src/solution" }
 file_reader = { path = "./src/file_reader" }
 checker = { path =  "./src/checker" }
 random_meta = { path = "./src/random_meta" }

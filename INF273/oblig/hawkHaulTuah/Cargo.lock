@@ -19,8 +19,10 @@ dependencies = [
  "file_reader",
  "local_search",
  "log",
+ "operators",
  "rand",
  "simmulated_annealing",
+ "solution",
 ]
 
 [[package]]
@@ -184,11 +186,13 @@ dependencies = [
  "checker",
  "env_logger",
  "file_reader",
+ "instance",
  "local_search",
  "log",
  "random_meta",
  "rayon",
  "simmulated_annealing",
+ "solution",
 ]
 
 [[package]]
@@ -196,6 +200,10 @@ name = "humantime"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
+name = "instance"
+version = "0.1.0"
 
 [[package]]
 name = "is_terminal_polyfill"
@@ -237,6 +245,14 @@ name = "once_cell"
 version = "1.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "945462a4b81e43c4e3ba96bd7b49d834c6f61198356aa858733bc4acf3cbe62e"
+
+[[package]]
+name = "operators"
+version = "0.1.0"
+dependencies = [
+ "rand",
+ "solution",
+]
 
 [[package]]
 name = "ppv-lite86"
@@ -363,6 +379,15 @@ dependencies = [
  "file_reader",
  "local_search",
  "rand",
+]
+
+[[package]]
+name = "solution"
+version = "0.1.0"
+dependencies = [
+ "instance",
+ "rand",
+ "rayon",
 ]
 
 [[package]]

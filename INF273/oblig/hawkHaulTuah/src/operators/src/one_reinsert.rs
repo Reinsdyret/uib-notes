@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use rand::*;
 use rand::distr::weighted::WeightedIndex;
 use solution::solution::Solution;
+use rand::distr::Distribution;
 use crate::operator::Operator;
 
 pub struct OneReinsert;
@@ -11,7 +12,7 @@ impl Operator for OneReinsert {
         "OneReinsert"
     }
 
-    fn apply(&self, solution: &Solution) -> Solution {
+    fn apply<'a>(&self, solution: &Solution<'a>) -> Solution<'a> {
         let mut rng = rand::rng();
         let call: u32;
         let mut new_solution = Solution::new(solution.instance, solution.routes.clone());

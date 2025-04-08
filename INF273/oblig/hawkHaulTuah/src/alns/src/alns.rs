@@ -1,4 +1,4 @@
-use solution::*;
+use solution::solution::*;
 use operators::*;
 use checker::checker::*;
 use file_reader::parse_data::*;
@@ -38,7 +38,7 @@ pub fn alns_general(
     let mut r = 0.2;
     let mut iterations_since_improvement = 0;
     let mut iterations = 0;
-    let max_iterations = 9900;
+    let max_iterations = 25000;
     let escape_condition = 500;
     let mut escape_size = 1;
     let segment_size = 100;
@@ -100,10 +100,11 @@ pub fn alns_general(
         operator_delta_costs.push(deltas);
 
         if feasibility {
+            /*
             if !seen_solutions.contains(&new_solution) {
                 seen_solutions.insert(new_solution.clone());
                 operator_points[operator_index] += 1;
-            }
+            }*/
 
             if delta_e < 0.0 {
                 incumbent = new_solution;
@@ -126,16 +127,17 @@ pub fn alns_general(
                         operator_points[operator_index] += 4; // Minor improvement
                     }
                     */
-                    operator_points[operator_index] += 4;
+                    operator_points[operator_index] += 5;
 
                     best_cost = incumbent_cost;
                     best_sol = incumbent.clone();
                 } else {
-                    operator_points[operator_index] += 2;
+                    operator_points[operator_index] += 3;
                 }
             } else if (incumbent_cost as f64) < (best_cost as f64 * d) {
                 incumbent = new_solution;
                 incumbent_cost = new_solution_cost;
+                operator_points[operator_index] += 1;
             }
         }
 

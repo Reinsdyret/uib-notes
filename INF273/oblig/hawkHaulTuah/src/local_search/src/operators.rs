@@ -631,6 +631,38 @@ pub fn random_removal(old_route: &Vec<Vec<u32>>, k: u32) -> (Vec<Vec<u32>>, Vec<
     (new_route, removed_calls)
 }
 
+pub fn random_removal_xs(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
+    let mut rng = rand::rng();
+    let k_range = (1..10);
+    let k = instance.num_calls.min(rng.random_range(k_range));
+
+    random_removal(old_route, k as u32)
+}
+
+pub fn random_removal_s(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
+    let mut rng = rand::rng();
+    let k_range = (10 .. 20);
+    let k = instance.num_calls.min(rng.random_range(k_range));
+
+    random_removal(old_route, k as u32)
+}
+
+pub fn random_removal_m(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
+    let mut rng = rand::rng();
+    let k_range = (20 .. 50);
+    let k = instance.num_calls.min(rng.random_range(k_range));
+
+    random_removal(old_route, k as u32)
+}
+
+pub fn random_removal_l(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
+    let mut rng = rand::rng();
+    let k_range = (50 .. 100);
+    let k = instance.num_calls.min(rng.random_range(k_range));
+
+    random_removal(old_route, k as u32)
+}
+
 /// Shaw removal - removes related calls based on travel distances and time windows
 ///
 /// This implementation first selects a random call, then removes calls that are
@@ -1021,6 +1053,50 @@ fn first_random_feasible_insertion(instance: &Instance, old_route: &Vec<Vec<u32>
 ------------- DESTROY AND REPAIR OPERATORS -------------
 ========================================================
 */
+
+pub fn random_xs_greedy(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let (new_route, calls) = random_removal_xs(&instance, &old_route);
+
+    greedy_insertion(&instance, &new_route, calls)
+}
+
+pub fn random_s_greedy(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let (new_route, calls) = random_removal_s(&instance, &old_route);
+
+    greedy_insertion(&instance, &new_route, calls)
+}
+
+pub fn random_m_greedy(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let (new_route, calls) = random_removal_m(&instance, &old_route);
+
+    greedy_insertion(&instance, &new_route, calls)
+}
+
+pub fn random_l_greedy(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let (new_route, calls) = random_removal_l(&instance, &old_route);
+
+    greedy_insertion(&instance, &new_route, calls)
+}
+
+pub fn test_all_calls_reinsert(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let mut best_cost = check_feasibility_and_get_cost(&instance, &old_route).0;
+    let mut best_solution = old_route.clone();
+
+    for vehicle_idx in 0..old_route.len() {
+        for call_idx in 0..old_route[vehicle_idx].len() {
+            let mut candidate = old_route.clone();
+            let call = remove_call_from_vehicle(call_idx, vehicle_idx, &mut candidate);
+            candidate = greedy_insertion(&instance, &candidate, vec![call]);
+            let candidate_cost = check_feasibility_and_get_cost(&instance, &candidate).0;
+            if candidate_cost < best_cost {
+                best_cost = candidate_cost;
+                best_solution = candidate;
+            }
+        }
+    }
+
+    best_solution
+}
 
 pub fn k_reinsert_real(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     let k = rand::random_range((instance.num_calls as f64 * 0.4)..instance.num_calls as f64 * 0.8) as u32;
