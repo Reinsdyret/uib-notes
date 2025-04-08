@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+solution = { path = "../solution" }
+operators = { path = "../operators" }
 simmulated_annealing = { path = "../simmulated_annealing" }
 file_reader = { path = '../file_reader' }
 checker = { path = "../checker" }

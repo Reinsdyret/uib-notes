@@ -1,0 +1,12 @@
+[package]
+name = "operators"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+solution = { path = "../solution" }
+rand = "0.9.0"
+
+[lib]
+name = "operators"
+path = "src/lib.rs"

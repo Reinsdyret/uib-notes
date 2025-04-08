@@ -57,6 +57,7 @@ pub struct Instance {
     pub loadings: HashMap<(u32, u32), Loading>,
 }
 
+
 pub fn read_file(file_path: &str) -> Instance {
     let file = File::open(file_path).expect("Unable to open file");
     let mut reader = BufReader::new(file);

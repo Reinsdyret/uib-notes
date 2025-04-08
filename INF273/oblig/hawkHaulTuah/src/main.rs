@@ -1,5 +1,7 @@
 use alns::alns_general;
 use checker::checker::*;
+use instance::*;
+use solution::*;
 use file_reader::parse_data::*; // Import read_file function
 use local_search::operators::{k_reinsert_real, random_removal_k_regret_insert, route_removal_greedy_insert, actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, two_call_swap, random_removal_greedy_insert, worst_removal_greedy_insert, one_reinsert_focus_dummy_random_feasible, one_reinsert_probability, worst_removal_k_regret_insert, route_removal_k_regret_insert, random_removal_first_feasible_insert, shaw_removal_greedy_insert, shaw_removal_k_regret_insert, random_removal_greedy_insert_10_times, shaw_removal_greedy_insert_10_times};
 use local_search::{local_search::*, operators};

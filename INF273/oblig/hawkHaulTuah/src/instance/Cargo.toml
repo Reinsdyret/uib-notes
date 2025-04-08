@@ -1,0 +1,10 @@
+[package]
+name = "instance"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[lib]
+name = "instance"
+path = "src/lib.rs"

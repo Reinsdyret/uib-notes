@@ -1,3 +1,5 @@
+use solution::*;
+use operators::*;
 use checker::checker::*;
 use file_reader::parse_data::*;
 use rand::distr::weighted::WeightedIndex;

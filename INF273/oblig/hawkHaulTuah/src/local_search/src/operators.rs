@@ -1840,8 +1840,7 @@ fn find_best_insertion_positions(
             Ok(weighted_index) => {
                 return Some(feasible_insertions[weighted_index.sample(&mut rng)])
             },
-            Err(_) => {
-                return None
+            Err(_) => {                return None
             }
         }*/
 
