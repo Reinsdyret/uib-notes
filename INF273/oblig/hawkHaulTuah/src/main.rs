@@ -73,10 +73,10 @@ fn main() {
         // random_removal_first_feasible_insert as OperatorFn,
         // random_removal_greedy_insert_10_times as OperatorFn,
         // shaw_removal_greedy_insert_10_times as OperatorFn,
-        // random_xs_greedy as OperatorFn,
-        // random_s_greedy as OperatorFn,
-        // random_m_greedy as OperatorFn,
-        // random_l_greedy as OperatorFn,
+        random_xs_greedy as OperatorFn,
+        random_s_greedy as OperatorFn,
+        random_m_greedy as OperatorFn,
+        random_l_greedy as OperatorFn,
         reorder_random_subroute_excact as OperatorFn,
     ];
 

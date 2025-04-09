@@ -591,7 +591,7 @@ pub fn two_call_swap(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<
 }
 
 pub fn reorder_random_subroute_excact(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
-    let mut calls: HashSet<u32> = HashSet::new();
+    let mut calls: Vec<u32> = Vec::new();
     let mut rng = rng();
     let mut new_route = old_route.clone();
 
@@ -613,13 +613,27 @@ pub fn reorder_random_subroute_excact(instance: &Instance, old_route: &Vec<Vec<u
     new_route
 }
 
-fn insert_calls_recursive(instance: &Instance, route: Vec<u32>, vehicle_id: usize, calls: HashSet<u32>) -> Vec<u32> {
+fn insert_calls_recursive(instance: &Instance, route: Vec<u32>, vehicle_id: usize, calls: Vec<u32>) -> Vec<u32> {
     if calls.is_empty() {
         return route;
     }
 
-    let mut results: Vec<Vec<u32>> = Vec::with_capacity(calls.len());
+    let mut results: Vec<Vec<u32>> = (0..calls.len()).into_par_iter()
+        .map(|idx| {
+            let call = calls[idx];
+            let mut local_clone = route.clone();
+            let mut local_calls = calls.clone();
+            local_calls.retain(|x| *x != call);
 
+            let (_, (i1, i2)) = get_best_insert(&instance, &route, call, vehicle_id);
+            local_clone.insert(i1, call);
+            local_clone.insert(i2, call);
+
+            local_clone = insert_calls_recursive(&instance, local_clone, vehicle_id, local_calls);
+            local_clone
+        }).collect();
+
+    /*
     for (i, call) in calls.iter().enumerate() {
         let mut local_clone = route.clone();
         let mut local_calls = calls.clone();
@@ -633,7 +647,7 @@ fn insert_calls_recursive(instance: &Instance, route: Vec<u32>, vehicle_id: usiz
         local_clone = insert_calls_recursive(&instance, local_clone, vehicle_id, local_calls);
 
         results.push(local_clone)
-    }
+    }*/
 
     let mut min_cost = u128::MAX;
     let mut min_route = results[0].clone();
@@ -1082,7 +1096,6 @@ pub fn k_regret_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_
 
     new_route
 }
-
 
 fn first_random_feasible_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>) -> Vec<Vec<u32>> {
     let mut rng = rng();
