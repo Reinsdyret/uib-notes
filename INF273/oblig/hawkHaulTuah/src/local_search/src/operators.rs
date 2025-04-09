@@ -4,6 +4,7 @@ use std::{collections::HashSet, iter::zip, u32, usize};
 use std::collections::HashMap;
 use checker::checker::*;
 use file_reader::parse_data::*;
+use log::__private_api::loc;
 use rand::distr::weighted::WeightedIndex;
 use rand::{prelude::*, random_range, rng};
 
@@ -341,7 +342,7 @@ pub fn reinsert_sub_route(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec
     // Only sample a subset of vehicles to improve performance
     let mut vehicle_indices: Vec<usize> = (0..old_route.len() - 1).collect(); // Skip outsource vehicle
     vehicle_indices.shuffle(&mut rng);
-    let vehicle_sample = &vehicle_indices[0..std::cmp::min(90, vehicle_indices.len())];
+    let vehicle_sample = &vehicle_indices[0..std::cmp::min(30, vehicle_indices.len())];
 
     // For each sampled vehicle, find valid subroutes
     for &vehicle_idx in vehicle_sample {
@@ -492,7 +493,7 @@ pub fn two_call_swap(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<
     }
 
     // Try multiple combinations for better results
-    let num_attempts = 100;
+    let num_attempts = 30;
 
     for _ in 0..num_attempts {
         // Select two different vehicles with probability based on route length
@@ -587,6 +588,65 @@ pub fn two_call_swap(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<
     }
 
     best_route
+}
+
+pub fn reorder_random_subroute_excact(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let mut calls: HashSet<u32> = HashSet::new();
+    let mut rng = rng();
+    let mut new_route = old_route.clone();
+
+    let non_empty_indexes: Vec<usize> = (0..old_route.len() - 1).filter(|idx| !old_route[*idx].is_empty()).collect();
+
+    if non_empty_indexes.is_empty() {
+        return old_route.clone();
+    }
+
+    // Choose random vehicle that is not empty.
+    let rand_idx = rng.random_range(0 .. non_empty_indexes.len());
+    let vehicle_idx = non_empty_indexes[rand_idx];
+    calls.extend(new_route[vehicle_idx].iter());
+
+    // Branch on calls to insert or not.
+    let new_vehicle_route = insert_calls_recursive(&instance, Vec::new(), vehicle_idx, calls);
+    new_route[vehicle_idx] = new_vehicle_route;
+
+    new_route
+}
+
+fn insert_calls_recursive(instance: &Instance, route: Vec<u32>, vehicle_id: usize, calls: HashSet<u32>) -> Vec<u32> {
+    if calls.is_empty() {
+        return route;
+    }
+
+    let mut results: Vec<Vec<u32>> = Vec::with_capacity(calls.len());
+
+    for (i, call) in calls.iter().enumerate() {
+        let mut local_clone = route.clone();
+        let mut local_calls = calls.clone();
+        local_calls.remove(call);
+
+        let (_, (i1, i2)) = get_best_insert(&instance, &route, *call, vehicle_id);
+
+        local_clone.insert(i1, *call);
+        local_clone.insert(i2, *call);
+
+        local_clone = insert_calls_recursive(&instance, local_clone, vehicle_id, local_calls);
+
+        results.push(local_clone)
+    }
+
+    let mut min_cost = u128::MAX;
+    let mut min_route = results[0].clone();
+
+    for route in results {
+        let cost = check_feasibility_one_vehicle(&instance, &route, vehicle_id).0;
+        if cost < min_cost {
+            min_cost = cost;
+            min_route = route.clone();
+        }
+    }
+
+    min_route.clone()
 }
 
 /*
@@ -889,7 +949,7 @@ fn greedy_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_ins
         new_route = insert_best_position(&instance, &new_route, call);
     }
 
-    new_route
+    reorder_random_subroute_excact(&instance, &new_route)
 }
 
 fn one_reinsert_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>) -> Vec<Vec<u32>> {

@@ -1,9 +1,9 @@
-use alns::alns_general;
+use alns::{alns_general, alns_timed};
 use checker::checker::*;
 use instance::instance::*;
 use solution::solution::*;
 use file_reader::parse_data::*; // Import read_file function
-use local_search::operators::{k_reinsert_real, random_removal_k_regret_insert, route_removal_greedy_insert, actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, two_call_swap, random_removal_greedy_insert, worst_removal_greedy_insert, one_reinsert_focus_dummy_random_feasible, one_reinsert_probability, worst_removal_k_regret_insert, route_removal_k_regret_insert, random_removal_first_feasible_insert, shaw_removal_greedy_insert, shaw_removal_k_regret_insert, random_removal_greedy_insert_10_times, shaw_removal_greedy_insert_10_times, test_all_calls_reinsert, random_xs_greedy, random_s_greedy, random_m_greedy, random_l_greedy};
+use local_search::operators::{k_reinsert_real, random_removal_k_regret_insert, route_removal_greedy_insert, actual_k_reinsert, k_reinsert, one_reinsert_greedy_insert, reinsert_sub_route, two_call_swap, random_removal_greedy_insert, worst_removal_greedy_insert, one_reinsert_focus_dummy_random_feasible, one_reinsert_probability, worst_removal_k_regret_insert, route_removal_k_regret_insert, random_removal_first_feasible_insert, shaw_removal_greedy_insert, shaw_removal_k_regret_insert, random_removal_greedy_insert_10_times, shaw_removal_greedy_insert_10_times, test_all_calls_reinsert, random_xs_greedy, random_s_greedy, random_m_greedy, random_l_greedy, reorder_random_subroute_excact};
 use local_search::{local_search::*, operators};
 use log::{debug, error, info, log_enabled, warn, Level};
 use random_meta::random::*;
@@ -22,9 +22,9 @@ fn main() {
         "src/data/Call_130_Vehicle_40.txt",
         "src/data/Call_300_Vehicle_90.txt",
     ];
-    env_logger::init();
-    info!("STARTEd");
-    warn!("Start");
+    // env_logger::init();
+    // info!("STARTEd");
+    // warn!("Start");
 
     // for filename in filenames {
     //     run_simmulated_annealing_report(filename, true, 0.8, 0.1);
@@ -61,7 +61,7 @@ fn main() {
         reinsert_sub_route as OperatorFn,
         one_reinsert_greedy_insert as OperatorFn,
         two_call_swap as OperatorFn,
-        test_all_calls_reinsert as OperatorFn,
+        // test_all_calls_reinsert as OperatorFn,
         // random_removal_greedy_insert as OperatorFn,
         // worst_removal_greedy_insert as OperatorFn,
         // route_removal_greedy_insert as OperatorFn,
@@ -73,10 +73,11 @@ fn main() {
         // random_removal_first_feasible_insert as OperatorFn,
         // random_removal_greedy_insert_10_times as OperatorFn,
         // shaw_removal_greedy_insert_10_times as OperatorFn,
-        random_xs_greedy as OperatorFn,
-        random_s_greedy as OperatorFn,
-        random_m_greedy as OperatorFn,
-        random_l_greedy as OperatorFn,
+        // random_xs_greedy as OperatorFn,
+        // random_s_greedy as OperatorFn,
+        // random_m_greedy as OperatorFn,
+        // random_l_greedy as OperatorFn,
+        reorder_random_subroute_excact as OperatorFn,
     ];
 
     // HOw many times reaching each optima for 10 iteratins
@@ -90,15 +91,35 @@ fn main() {
     // let filename = "src/data/Call_35_Vehicle_7.txt";
     // run_alns_report(filename, true, &my_operators);
 
-    /*
-    for filename in filenames {
-        run_alns_report(filename, true, &my_operators);
-    }
-    */
 
-    for filename in filenames {
-        run_simmulated_annealing_report_with_operators_and_weights(filename, true, 0.8, 0.1, &*my_operators, &*vec![1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0])
-    }
+    // for filename in filenames {
+    //     run_alns_report(filename, true, &my_operators);
+    // }
+
+    // for filename in filenames {
+    //     run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(3));
+    // }
+
+    let mut filename: &str;
+    filename = "src/data/Call_7_Vehicle_3.txt";
+    run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(5));
+
+    filename = "src/data/Call_18_Vehicle_5.txt";
+    run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(45));
+
+    filename = "src/data/Call_35_Vehicle_7.txt";
+    run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(150));
+
+    filename = "src/data/Call_80_Vehicle_20.txt";
+    run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(300));
+
+    filename = "src/data/Call_130_Vehicle_40.txt";
+    run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(400));
+
+
+    // for filename in filenames {
+    //     run_simmulated_annealing_report_with_operators_and_weights(filename, true, 0.8, 0.1, &*my_operators, &*vec![1.0,1.0,1.0,1.0,1.0,1.0,1.0])
+    // }
 
 
     // for filename in filenames {
@@ -107,6 +128,80 @@ fn main() {
     // for filename in filenames {
     //     run_random_report(filename);
     // }
+}
+
+fn run_alns_timed_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>, time_limit: Duration) -> bool {
+    let instance = read_file(filename);
+    let outsource_sol = get_init_solution(instance.num_calls, instance.num_vehicles);
+
+    let results: Vec<(Vec<Vec<u32>>, u128, Vec<u128>, Vec<u128>, usize)>;
+    let now = Instant::now();
+
+    if parallel {
+        results = (0..1)
+            .into_par_iter()
+            .map(|i| {
+                alns_timed(&instance, &operators, time_limit)
+            })
+            .collect()
+    } else {
+        results = (0..1)
+            .map(|_| {
+                alns_timed(&instance, &operators, time_limit)
+            })
+            .collect();
+    }
+
+    // Find best solution by cost
+    let best_result = results.iter().min_by_key(|(_, cost,  _, _, _)| *cost).unwrap();
+    let (best_solution, best_cost, best_history, incumbent_history, iterations) = best_result;
+
+    // Save all data to files
+    save_solution_history(filename, best_history, incumbent_history);
+
+    // Create a frequency map of solutions
+    let mut solution_counts: std::collections::HashMap<u128, usize> = std::collections::HashMap::new();
+    let mut solution_examples: std::collections::HashMap<u128, Vec<Vec<u32>>> = std::collections::HashMap::new();
+
+    for (sol, cost, _, _, _) in &results {
+        *solution_counts.entry(*cost).or_insert(0) += 1;
+
+        // Store an example solution for each cost (we just keep the first one we find)
+        if !solution_examples.contains_key(cost) {
+            solution_examples.insert(*cost, sol.clone());
+        }
+    }
+
+    // Log the solution frequencies
+    save_solution_frequencies(filename, &solution_counts, &solution_examples, best_solution, *best_cost);
+
+    let total_time = Instant::now().duration_since(now).as_millis();
+    let total_sum: u128 = results.iter().map(|(_, cost, _, _, _)| *cost).sum();
+
+    let init_cost = check_feasibility_and_get_cost(&instance, &outsource_sol).0;
+    // let avg_cost = total_sum / (if parallel { 10 } else { 1 });
+    // let avg_time = total_time as f64 / 10.0;
+    // let diff_avg = init_cost - avg_cost;
+    // let improvement_avg: f64 = (diff_avg as f64 / init_cost as f64) * 100.0;
+    let diff_best = init_cost - best_cost;
+    let improvement_best: f64 = (diff_best as f64 / init_cost as f64) * 100.0;
+
+    println!(
+        "Ran ALNS with custom operators. {filename}
+    Got off {iterations} iterations
+    Time taken {:.2}s
+    Best cost: {}
+    Improvement best: {:.2}%
+    Solution: {:?}",
+        total_time as f64 / 1000.0,
+        // avg_time / 1000.0,
+        best_cost,
+        // avg_cost,
+        // improvement_avg,
+        improvement_best,
+        concat_solution(&best_solution)
+    );
+    true
 }
 
 fn run_alns_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>) {

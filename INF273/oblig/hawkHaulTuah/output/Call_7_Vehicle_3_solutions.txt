@@ -5,7 +5,7 @@ Solution frequencies (10 runs):
 -----------------------------
 Cost      | Frequency | Percentage
 ----------|-----------|------------
-1134176    | 10        | 100.0%
+1134176    | 1         | 10.0%
 
 Best solution found (cost: 1134176):
 -----------------------------
@@ -14,6 +14,6 @@ Best solution found (cost: 1134176):
 All unique solutions:
 -----------------------------
 Cost: 1134176
-Frequency: 10/10 runs (100%)
+Frequency: 1/10 runs (10%)
 Solution: [4, 4, 7, 7, 0, 2, 2, 0, 1, 5, 5, 3, 3, 1, 0, 6, 6]
 
