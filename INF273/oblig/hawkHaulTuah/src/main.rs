@@ -65,7 +65,7 @@ fn main() {
         // random_removal_greedy_insert as OperatorFn,
         // worst_removal_greedy_insert as OperatorFn,
         // route_removal_greedy_insert as OperatorFn,
-        // shaw_removal_greedy_insert as OperatorFn,
+        shaw_removal_greedy_insert as OperatorFn,
         // k_reinsert_real as OperatorFn,
         // random_removal_k_regret_insert as OperatorFn,
         // route_removal_k_regret_insert as OperatorFn,
@@ -115,6 +115,7 @@ fn main() {
 
     filename = "src/data/Call_130_Vehicle_40.txt";
     run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(400));
+
 
 
     // for filename in filenames {

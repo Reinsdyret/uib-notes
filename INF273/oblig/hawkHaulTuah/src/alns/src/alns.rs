@@ -37,7 +37,7 @@ pub fn alns_timed(
     let mut iterations_since_improvement = 0;
     let mut iterations: usize = 0;
     let escape_condition = 500;
-    let mut escape_size = 5;
+    let mut escape_size = 3;
     let segment_size = 100;
 
     let mut operator_use_counts = vec![0; operators.len()];
@@ -198,7 +198,7 @@ pub fn alns_general(
     let mut iterations = 0;
     let max_iterations = 25000;
     let escape_condition = 500;
-    let mut escape_size = 1;
+    let mut escape_size = 3;
     let segment_size = 100;
     
     let mut operator_use_counts = vec![0; operators.len()];
