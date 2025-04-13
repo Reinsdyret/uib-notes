@@ -37,7 +37,7 @@ pub fn alns_timed(
     let mut iterations_since_improvement = 0;
     let mut iterations: usize = 0;
     let escape_condition = 500;
-    let mut escape_size = 3;
+    let mut escape_size = 1;
     let segment_size = 100;
 
     let mut operator_use_counts = vec![0; operators.len()];
@@ -349,7 +349,7 @@ fn escape(
     let mut end_solution = solution.clone();
 
     for _i in 0..escape_iterations {
-        let new = one_reinsert_greedy_insert(&instance, &end_solution);
+        let new = reorder_random_subroute_excact(&instance, &end_solution);
         let (cost, feasibility) = check_feasibility_and_get_cost(&instance, &new);
         if !feasibility {
             continue;

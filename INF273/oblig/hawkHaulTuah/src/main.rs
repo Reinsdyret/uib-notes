@@ -77,7 +77,7 @@ fn main() {
         random_s_greedy as OperatorFn,
         random_m_greedy as OperatorFn,
         random_l_greedy as OperatorFn,
-        reorder_random_subroute_excact as OperatorFn,
+        //reorder_random_subroute_excact as OperatorFn,
     ];
 
     // HOw many times reaching each optima for 10 iteratins
@@ -101,11 +101,14 @@ fn main() {
     // }
 
     let mut filename: &str;
+    /*
     filename = "src/data/Call_7_Vehicle_3.txt";
     run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(5));
 
     filename = "src/data/Call_18_Vehicle_5.txt";
     run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(45));
+    */
+
 
     filename = "src/data/Call_35_Vehicle_7.txt";
     run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(150));

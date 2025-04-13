@@ -595,7 +595,9 @@ pub fn reorder_random_subroute_excact(instance: &Instance, old_route: &Vec<Vec<u
     let mut rng = rng();
     let mut new_route = old_route.clone();
 
-    let non_empty_indexes: Vec<usize> = (0..old_route.len() - 1).filter(|idx| !old_route[*idx].is_empty()).collect();
+    let non_empty_indexes: Vec<usize> = (0..old_route.len() - 1)
+        .filter(|idx| !old_route[*idx].is_empty() &&
+            old_route[*idx].len() < 10).collect();
 
     if non_empty_indexes.is_empty() {
         return old_route.clone();
@@ -963,7 +965,8 @@ fn greedy_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_ins
         new_route = insert_best_position(&instance, &new_route, call);
     }
 
-    reorder_random_subroute_excact(&instance, &new_route)
+    // reorder_random_subroute_excact(&instance, &new_route)
+    new_route
 }
 
 fn one_reinsert_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>) -> Vec<Vec<u32>> {
