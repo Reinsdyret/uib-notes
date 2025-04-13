@@ -739,6 +739,14 @@ pub fn random_removal_l(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<
     random_removal(old_route, k as u32)
 }
 
+pub fn random_removal_dyn(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
+    let mut rng = rand::rng();
+    let k_range = (instance.num_calls as f64 * 0.2 .. instance.num_calls as f64 * 0.6);
+    let k = rng.random_range(k_range);
+
+    random_removal(old_route, k as u32)
+}
+
 /// Shaw removal - removes related calls based on travel distances and time windows
 ///
 /// This implementation first selects a random call, then removes calls that are
@@ -1150,6 +1158,12 @@ pub fn random_m_greedy(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Ve
 
 pub fn random_l_greedy(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     let (new_route, calls) = random_removal_l(&instance, &old_route);
+
+    greedy_insertion(&instance, &new_route, calls)
+}
+
+pub fn random_dyn_greedy(instance: &Instance, old_route: &Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let (new_route, calls) = random_removal_dyn(&instance, &old_route);
 
     greedy_insertion(&instance, &new_route, calls)
 }

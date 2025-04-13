@@ -37,7 +37,8 @@ pub fn alns_timed(
     let mut iterations_since_improvement = 0;
     let mut iterations: usize = 0;
     let escape_condition = 500;
-    let mut escape_size = 1;
+    let mut escape_size = 2;
+    let original_escape_size = escape_size;
     let segment_size = 100;
 
     let mut operator_use_counts = vec![0; operators.len()];
@@ -51,6 +52,7 @@ pub fn alns_timed(
         iterations += 1;
         iterations_since_improvement += 1;
         d = 0.2 * ((time_limit - instant.elapsed()).as_secs_f64() / time_limit.as_secs_f64()) * best_cost as f64;
+
 
 
         if iterations_since_improvement > escape_condition * 5 {
@@ -71,8 +73,9 @@ pub fn alns_timed(
                 best_cost = incumbent_cost;
                 best_sol = incumbent.clone();
                 iterations_since_improvement = 0;
+                //escape_size = original_escape_size;
             } else {
-                escape_size = (escape_size as f64 * 1.5) as usize;
+                //escape_size = (escape_size as f64 * 1.5) as usize;
             }
         }
 
@@ -347,9 +350,10 @@ fn escape(
     escape_iterations: usize,
 ) -> Vec<Vec<u32>> {
     let mut end_solution = solution.clone();
+    let mut rng = rand::rng();
 
     for _i in 0..escape_iterations {
-        let new = reorder_random_subroute_excact(&instance, &end_solution);
+        let new= operator(&instance, &end_solution);
         let (cost, feasibility) = check_feasibility_and_get_cost(&instance, &new);
         if !feasibility {
             continue;

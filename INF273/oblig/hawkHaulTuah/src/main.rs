@@ -58,14 +58,14 @@ fn main() {
     let my_operators = vec![
         // one_reinsert_focus_dummy_random_feasible as OperatorFn,
         // one_reinsert_probability as OperatorFn,
-        reinsert_sub_route as OperatorFn,
+        // reinsert_sub_route as OperatorFn,
         one_reinsert_greedy_insert as OperatorFn,
-        two_call_swap as OperatorFn,
+        // two_call_swap as OperatorFn,
         // test_all_calls_reinsert as OperatorFn,
         // random_removal_greedy_insert as OperatorFn,
         // worst_removal_greedy_insert as OperatorFn,
         // route_removal_greedy_insert as OperatorFn,
-        shaw_removal_greedy_insert as OperatorFn,
+        // shaw_removal_greedy_insert as OperatorFn,
         // k_reinsert_real as OperatorFn,
         // random_removal_k_regret_insert as OperatorFn,
         // route_removal_k_regret_insert as OperatorFn,
@@ -73,11 +73,11 @@ fn main() {
         // random_removal_first_feasible_insert as OperatorFn,
         // random_removal_greedy_insert_10_times as OperatorFn,
         // shaw_removal_greedy_insert_10_times as OperatorFn,
-        random_xs_greedy as OperatorFn,
-        random_s_greedy as OperatorFn,
-        random_m_greedy as OperatorFn,
-        random_l_greedy as OperatorFn,
-        //reorder_random_subroute_excact as OperatorFn,
+        // random_xs_greedy as OperatorFn,
+        // random_s_greedy as OperatorFn,
+        // random_m_greedy as OperatorFn,
+        // random_l_greedy as OperatorFn,
+        // reorder_random_subroute_excact as OperatorFn,
     ];
 
     // HOw many times reaching each optima for 10 iteratins
@@ -101,14 +101,12 @@ fn main() {
     // }
 
     let mut filename: &str;
-    /*
+
     filename = "src/data/Call_7_Vehicle_3.txt";
     run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(5));
 
     filename = "src/data/Call_18_Vehicle_5.txt";
     run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(45));
-    */
-
 
     filename = "src/data/Call_35_Vehicle_7.txt";
     run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(150));
