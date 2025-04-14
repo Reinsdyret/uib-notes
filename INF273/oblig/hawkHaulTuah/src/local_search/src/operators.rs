@@ -190,7 +190,19 @@ pub fn one_reinsert_greedy_insert(instance: &Instance, old_route: &Vec<Vec<u32>>
         let vehicle_idx = dist.sample(&mut rng);
 
         // Skip if this is the outsource vehicle (we'll handle that case separately)
+
         if vehicle_idx == route.len() - 1 {
+            let mut candidate = route.clone();
+            candidate[vehicle_idx].insert(0, call);
+            candidate[vehicle_idx].insert(0, call);
+            // Evaluate full solution cost
+            let (total_cost, is_feasible) = check_feasibility_and_get_cost(&instance, &candidate);
+
+            // Update best solution if this is better
+            if is_feasible && total_cost < best_cost {
+                best_solution = candidate;
+                best_cost = total_cost;
+            }
             continue;
         }
 
@@ -718,7 +730,11 @@ pub fn random_removal_xs(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec
 pub fn random_removal_s(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
     let mut rng = rand::rng();
     let k_range = (10 .. 20);
-    let k = instance.num_calls.min(rng.random_range(k_range));
+    let mut k = rng.random_range(k_range);
+
+    if k > instance.num_calls {
+        k = 1;
+    }
 
     random_removal(old_route, k as u32)
 }
@@ -726,7 +742,11 @@ pub fn random_removal_s(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<
 pub fn random_removal_m(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
     let mut rng = rand::rng();
     let k_range = (20 .. 50);
-    let k = instance.num_calls.min(rng.random_range(k_range));
+    let mut k = rng.random_range(k_range);
+
+    if k > instance.num_calls {
+        k = 1;
+    }
 
     random_removal(old_route, k as u32)
 }
@@ -734,7 +754,11 @@ pub fn random_removal_m(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<
 pub fn random_removal_l(instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Vec<u32>>, Vec<u32>) {
     let mut rng = rand::rng();
     let k_range = (50 .. 100);
-    let k = instance.num_calls.min(rng.random_range(k_range));
+    let mut k = rng.random_range(k_range);
+
+    if k > instance.num_calls {
+        k = 1;
+    }
 
     random_removal(old_route, k as u32)
 }
@@ -967,14 +991,54 @@ pub fn route_removal(_instance: &Instance, old_route: &Vec<Vec<u32>>) -> (Vec<Ve
 */
 
 fn greedy_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>) -> Vec<Vec<u32>> {
-    let mut new_route = old_route.clone();
-
-    for call in calls_to_insert {
-        new_route = insert_best_position(&instance, &new_route, call);
+    // For small number of calls, just use the sequential approach
+    if calls_to_insert.len() <= 3 {
+        let mut new_route = old_route.clone();
+        for call in calls_to_insert {
+            new_route = insert_best_position(&instance, &new_route, call);
+        }
+        return new_route;
     }
-
-    // reorder_random_subroute_excact(&instance, &new_route)
-    new_route
+    
+    // For larger sets of calls, try multiple insertion orders in parallel
+    use rayon::prelude::*;
+    use rand::seq::SliceRandom;
+    let mut rng = rng();
+    
+    // Generate multiple random permutations of the calls
+    let num_permutations = 8.min(calls_to_insert.len());
+    let mut permutations: Vec<Vec<u32>> = Vec::with_capacity(num_permutations);
+    
+    // First permutation is the original order
+    permutations.push(calls_to_insert.clone());
+    
+    // Generate additional random permutations
+    for _ in 1..num_permutations {
+        let mut permutation = calls_to_insert.clone();
+        permutation.shuffle(&mut rng);
+        permutations.push(permutation);
+    }
+    
+    // Process each permutation in parallel
+    let results: Vec<(Vec<Vec<u32>>, u128)> = permutations.par_iter()
+        .map(|perm| {
+            let mut route = old_route.clone();
+            for &call in perm {
+                route = insert_best_position(&instance, &route, call);
+            }
+            let cost = check_feasibility_and_get_cost(&instance, &route).0;
+            (route, cost)
+        })
+        .collect();
+    
+    // Find the best solution
+    if let Some((best_route, _)) = results.into_iter()
+        .min_by_key(|(_, cost)| *cost) {
+        return best_route;
+    }
+    
+    // Fallback to the original solution if something went wrong
+    old_route.clone()
 }
 
 fn one_reinsert_insertion(instance: &Instance, old_route: &Vec<Vec<u32>>, calls_to_insert: Vec<u32>) -> Vec<Vec<u32>> {
@@ -1623,36 +1687,45 @@ fn get_slack_probability(
     routes: Vec<Vec<u32>>,
     include_outsource: bool,
 ) -> Vec<f64> {
-    let mut weights: Vec<f64> = Vec::new();
-
-    for (i, route) in routes[0..routes.len() - 1].iter().enumerate() {
-        weights.push(calculate_vehicle_slack(&instance, &route, i) as f64);
-    }
-
-    let max_weight = weights
-        .clone()
-        .into_iter()
+    use rayon::prelude::*;
+    
+    // Calculate slack for all vehicles in parallel
+    let weights: Vec<f64> = (0..routes.len() - 1)
+        .into_par_iter()
+        .map(|i| calculate_vehicle_slack(instance, &routes[i], i) as f64)
+        .collect();
+    
+    // Create a mutable copy to modify
+    let mut weights_mut = weights;
+    
+    // Find the maximum weight
+    let max_weight = weights_mut
+        .iter()
+        .copied()
         .max_by(|a, b| a.total_cmp(b))
-        .unwrap();
-
+        .unwrap_or(1.0);
+    
+    // Handle outsource vehicle
     if include_outsource {
-        weights.push(max_weight / weights.len() as f64);
+        weights_mut.push(max_weight / weights_mut.len().max(1) as f64);
     } else {
-        weights.push(0.0)
+        weights_mut.push(0.0);
     }
-
+    
+    // Set empty routes to maximum weight
     for (i, route) in routes[0..routes.len() - 1].iter().enumerate() {
-        if route.len() == 0 {
-            weights[i] = max_weight;
+        if route.is_empty() {
+            weights_mut[i] = max_weight;
         }
     }
-
-    if weights.iter().sum::<f64>() == 0.0 {
-        weights = vec![1.0; routes.len() - 1];
-        weights.push(0.0);
+    
+    // Handle edge case where all weights are zero
+    if weights_mut.iter().sum::<f64>() == 0.0 {
+        weights_mut = vec![1.0; routes.len() - 1];
+        weights_mut.push(0.0);
     }
-
-    return weights;
+    
+    weights_mut
 }
 
 fn calculate_vehicle_slack(instance: &Instance, route: &Vec<u32>, vehicle_idx: usize) -> f64 {

@@ -1,5 +1,5 @@
 use std::f64;
-
+use std::time::{Duration, Instant};
 use checker::checker::*;
 use file_reader::parse_data::Instance;
 use local_search::operators::*;
@@ -13,15 +13,13 @@ pub type OperatorFn = fn(&Instance, &Vec<Vec<u32>>) -> Vec<Vec<u32>>;
 // Define the available operators
 pub fn get_available_operators() -> Vec<OperatorFn> {
     vec![
-        reinsert_sub_route as OperatorFn,
         one_reinsert_greedy_insert as OperatorFn,
-        two_call_swap as OperatorFn
     ]
 }
 
 // Default weights if none are provided
 pub fn get_default_weights() -> Vec<f64> {
-    vec![0.33, 0.33, 0.33]
+    vec![1.0]
 }
 
 pub fn run_sa(

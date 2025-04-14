@@ -25,7 +25,7 @@ pub fn alns_timed(
     let mut new_solution_cost;
     let mut feasibility;
 
-    let mut weights: Vec<f64> = vec![1.0 / operators.len() as f64; operators.len()];
+    let weights: Vec<f64> = vec![1.0 / operators.len() as f64; operators.len()];
     let mut dist = WeightedIndex::new(&weights).unwrap();
     let mut rng = rand::rng();
 
@@ -33,16 +33,10 @@ pub fn alns_timed(
     let mut incumbent_history: Vec<u128> = Vec::new();
 
     let mut d = 0.2;
-    let mut r = 0.2;
     let mut iterations_since_improvement = 0;
     let mut iterations: usize = 0;
     let escape_condition = 500;
-    let mut escape_size = 2;
-    let original_escape_size = escape_size;
-    let segment_size = 100;
-
-    let mut operator_use_counts = vec![0; operators.len()];
-    let mut operator_points = vec![0; operators.len()];
+    let escape_size = 2;
 
     let mut delta_e: f64;
 
@@ -51,9 +45,8 @@ pub fn alns_timed(
         incumbent_history.push(incumbent_cost);
         iterations += 1;
         iterations_since_improvement += 1;
+
         d = 0.2 * ((time_limit - instant.elapsed()).as_secs_f64() / time_limit.as_secs_f64()) * best_cost as f64;
-
-
 
         if iterations_since_improvement > escape_condition * 5 {
             incumbent = best_sol.clone();
@@ -65,7 +58,6 @@ pub fn alns_timed(
         if iterations_since_improvement >= escape_condition {
             let operator = operators[dist.sample(&mut rng)];
             incumbent = escape(&instance, &incumbent, &operator, best_cost, escape_size);
-            // escape_size += 1;
             (incumbent_cost, _) = check_feasibility_and_get_cost(&instance, &incumbent);
 
 
@@ -73,9 +65,6 @@ pub fn alns_timed(
                 best_cost = incumbent_cost;
                 best_sol = incumbent.clone();
                 iterations_since_improvement = 0;
-                //escape_size = original_escape_size;
-            } else {
-                //escape_size = (escape_size as f64 * 1.5) as usize;
             }
         }
 
@@ -83,7 +72,6 @@ pub fn alns_timed(
         // Choose operator
         let operator_index = dist.sample(&mut rng);
         let operator = operators[operator_index];
-        operator_use_counts[operator_index] += 1;
 
         // Apply operator
         new_solution = operator(&instance, &new_solution);
@@ -91,79 +79,20 @@ pub fn alns_timed(
         delta_e = new_solution_cost as f64 - incumbent_cost as f64;
 
         if feasibility {
-            /*
-            if !seen_solutions.contains(&new_solution) {
-                seen_solutions.insert(new_solution.clone());
-                operator_points[operator_index] += 1;
-            }*/
-
             if delta_e < 0.0 {
                 incumbent = new_solution;
                 incumbent_cost = new_solution_cost;
 
-
                 if incumbent_cost < best_cost {
                     iterations_since_improvement = 0;
 
-                    // Significant improvement - new best solution
-                    let improvement = best_cost - incumbent_cost;
-                    let improvement_percentage = improvement as f64 / best_cost as f64;
-
-                    // Scale points based on improvement size
-                    /*
-                    if improvement_percentage > 0.05 { // >5% improvement
-                        operator_points[operator_index] += 10;
-                    } else if improvement_percentage > 0.01 { // >1% improvement
-                        operator_points[operator_index] += 6;
-                    } else {
-                        operator_points[operator_index] += 4; // Minor improvement
-                    }
-                    */
-                    operator_points[operator_index] += 5;
-
                     best_cost = incumbent_cost;
                     best_sol = incumbent.clone();
-                } else {
-                    operator_points[operator_index] += 3;
                 }
+
             } else if (incumbent_cost as f64) < (best_cost as f64 + d) {
                 incumbent = new_solution;
                 incumbent_cost = new_solution_cost;
-                operator_points[operator_index] += 1;
-            }
-        }
-
-        if iterations % segment_size == 0 {
-            let sum_points: i32 = operator_points.iter().sum();
-            // Update weights and counts
-            for weights_i in 0..weights.len() {
-                // println!("{}", operator_points[weights_i]);
-                // println!("{}", operator_use_counts[weights_i]);
-                weights[weights_i] = f64::max(
-                    weights[weights_i] * (1.0 - r)
-                        + r * (operator_points[weights_i] as f64
-                        / operator_use_counts[weights_i] as f64),
-                    0.05,
-                );
-            }
-
-            // Normalize weights so they sum to 1.0
-            let sum: f64 = weights.iter().sum();
-            for weights_i in 0..weights.len() {
-                weights[weights_i] = weights[weights_i] / sum;
-            }
-
-            operator_points = vec![0; operator_points.len()];
-            operator_use_counts = vec![0; operator_use_counts.len()];
-
-            match WeightedIndex::new(&weights) {
-                Ok(weighted_index) => {
-                    dist = weighted_index;
-                    // println!("{:?}", weights);
-                }
-                Err(_) => {
-                    panic!("After updating weights in alns, creating weighted index failed. Weights: {:?}", weights);
-                }
             }
         }
     }
@@ -353,7 +282,7 @@ fn escape(
     let mut rng = rand::rng();
 
     for _i in 0..escape_iterations {
-        let new= operator(&instance, &end_solution);
+        let new = operator(&instance, &end_solution);
         let (cost, feasibility) = check_feasibility_and_get_cost(&instance, &new);
         if !feasibility {
             continue;

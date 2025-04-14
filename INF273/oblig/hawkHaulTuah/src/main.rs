@@ -14,47 +14,7 @@ use std::time::Instant;
 use std::{u128, u32, io::Write, fs};
 
 fn main() {
-    let filenames: Vec<&str> = vec![
-        "src/data/Call_7_Vehicle_3.txt",
-        "src/data/Call_18_Vehicle_5.txt",
-        "src/data/Call_35_Vehicle_7.txt",
-        "src/data/Call_80_Vehicle_20.txt",
-        "src/data/Call_130_Vehicle_40.txt",
-        "src/data/Call_300_Vehicle_90.txt",
-    ];
-    // env_logger::init();
-    // info!("STARTEd");
-    // warn!("Start");
 
-    // for filename in filenames {
-    //     run_simmulated_annealing_report(filename, true, 0.8, 0.1);
-    // }
-
-    // for filename in filenames {
-    //     tune_weights(filename, 0.1);
-    // }
-    //
-    // let my_operators = vec![
-    //     (reinsert_sub_route as OperatorFn, "reinsert_sub_route"),
-    //     (
-    //         actual_k_reinsert as OperatorFn,
-    //         "one_reinsert_greedy_insert",
-    //     ),
-    //     (two_call_swap as OperatorFn, "two_call_swap_extended"),
-    // ];
-    // let op_weights = vec![0.2, 0.5, 0.3];
-    // for filename in filenames {
-    //     run_simmulated_annealing_report_with_operators_and_weights(
-    //         filename,
-    //         true,
-    //         0.8,
-    //         0.1,
-    //         &my_operators,
-    //         &op_weights,
-    //     );
-    // }
-
-    // Create a diverse set of operators for ALNS
     let my_operators = vec![
         // one_reinsert_focus_dummy_random_feasible as OperatorFn,
         // one_reinsert_probability as OperatorFn,
@@ -80,59 +40,28 @@ fn main() {
         // reorder_random_subroute_excact as OperatorFn,
     ];
 
-    // HOw many times reaching each optima for 10 iteratins
-    // Log the iterations for finding the best solution 10 times each file
-    // Find out if operators are good enought to go from the usual local optima to the best found.
-    // Plot weights for operators and make a vertical line signifying when we found best solution
-    // Plot delta for cost for each operator when running.
-    // Plot temperature
-    // Plot probability only for iterations where delta > 0
+    // Define time limits for each file
+    let time_limits = vec![
+        ("src/data/Call_7_Vehicle_3.txt", Duration::from_secs(5)),
+        ("src/data/Call_18_Vehicle_5.txt", Duration::from_secs(45)),
+        ("src/data/Call_35_Vehicle_7.txt", Duration::from_secs(150)),
+        ("src/data/Call_80_Vehicle_20.txt", Duration::from_secs(700)),
+        ("src/data/Call_130_Vehicle_40.txt", Duration::from_secs(700)),
+        ("src/data/Call_300_Vehicle_90.txt", Duration::from_secs(700)),
+    ];
 
-    // let filename = "src/data/Call_35_Vehicle_7.txt";
-    // run_alns_report(filename, true, &my_operators);
+    // Run 10 times for each file and collect statistics
+    for (filename, time_limit) in &time_limits[0..3] {
+        run_alns_timed_multiple(*filename, false, &my_operators, *time_limit, 10);
+    }
 
-
-    // for filename in filenames {
-    //     run_alns_report(filename, true, &my_operators);
-    // }
-
-    // for filename in filenames {
-    //     run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(3));
-    // }
-
-    let mut filename: &str;
-
-    filename = "src/data/Call_7_Vehicle_3.txt";
-    run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(5));
-
-    filename = "src/data/Call_18_Vehicle_5.txt";
-    run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(45));
-
-    filename = "src/data/Call_35_Vehicle_7.txt";
-    run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(150));
-
-    filename = "src/data/Call_80_Vehicle_20.txt";
-    run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(300));
-
-    filename = "src/data/Call_130_Vehicle_40.txt";
-    run_alns_timed_report(filename, true, &my_operators, Duration::from_secs(400));
-
-
-
-    // for filename in filenames {
-    //     run_simmulated_annealing_report_with_operators_and_weights(filename, true, 0.8, 0.1, &*my_operators, &*vec![1.0,1.0,1.0,1.0,1.0,1.0,1.0])
-    // }
-
-
-    // for filename in filenames {
-    //     run_local_search_report(filename, true);
-    // }
-    // for filename in filenames {
-    //     run_random_report(filename);
-    // }
+    (3..time_limits.len()).into_par_iter().map(|id| {
+        let (filename, time_limit) = time_limits[id];
+        run_alns_timed_multiple(filename, false, &my_operators, time_limit, 10)
+    }).collect::<Vec<_>>();
 }
 
-fn run_alns_timed_report(filename: &str, parallel: bool, operators: &Vec<OperatorFn>, time_limit: Duration) -> bool {
+fn run_alns_timed_multiple(filename: &str, parallel: bool, operators: &Vec<OperatorFn>, time_limit: Duration, runs: usize) -> bool {
     let instance = read_file(filename);
     let outsource_sol = get_init_solution(instance.num_calls, instance.num_vehicles);
 
@@ -140,22 +69,24 @@ fn run_alns_timed_report(filename: &str, parallel: bool, operators: &Vec<Operato
     let now = Instant::now();
 
     if parallel {
-        results = (0..1)
+        results = (0..runs)
             .into_par_iter()
             .map(|i| {
+                println!("Starting run {}/{} for {}", i+1, runs, filename);
                 alns_timed(&instance, &operators, time_limit)
             })
             .collect()
     } else {
-        results = (0..1)
-            .map(|_| {
+        results = (0..runs)
+            .map(|i| {
+                println!("Starting run {}/{} for {}", i+1, runs, filename);
                 alns_timed(&instance, &operators, time_limit)
             })
             .collect();
     }
 
     // Find best solution by cost
-    let best_result = results.iter().min_by_key(|(_, cost,  _, _, _)| *cost).unwrap();
+    let best_result = results.iter().min_by_key(|(_, cost, _, _, _)| *cost).unwrap();
     let (best_solution, best_cost, best_history, incumbent_history, iterations) = best_result;
 
     // Save all data to files
@@ -181,28 +112,52 @@ fn run_alns_timed_report(filename: &str, parallel: bool, operators: &Vec<Operato
     let total_sum: u128 = results.iter().map(|(_, cost, _, _, _)| *cost).sum();
 
     let init_cost = check_feasibility_and_get_cost(&instance, &outsource_sol).0;
-    // let avg_cost = total_sum / (if parallel { 10 } else { 1 });
-    // let avg_time = total_time as f64 / 10.0;
-    // let diff_avg = init_cost - avg_cost;
-    // let improvement_avg: f64 = (diff_avg as f64 / init_cost as f64) * 100.0;
+    let avg_cost = total_sum / runs as u128;
+    let avg_time = total_time as f64 / runs as f64;
+    let diff_avg = init_cost - avg_cost;
+    let improvement_avg: f64 = (diff_avg as f64 / init_cost as f64) * 100.0;
     let diff_best = init_cost - best_cost;
     let improvement_best: f64 = (diff_best as f64 / init_cost as f64) * 100.0;
 
+    // Calculate statistics about iterations
+    let avg_iterations = results.iter().map(|(_, _, _, _, iter)| *iter).sum::<usize>() as f64 / runs as f64;
+    let max_iterations = results.iter().map(|(_, _, _, _, iter)| *iter).max().unwrap();
+    let min_iterations = results.iter().map(|(_, _, _, _, iter)| *iter).min().unwrap();
+
     println!(
-        "Ran ALNS with custom operators. {filename}
-    Got off {iterations} iterations
-    Time taken {:.2}s
+        "Ran ALNS multiple times with custom operators. {filename}
+    Runs: {runs}
+    Time limit per run: {}s
+    Avg time taken: {:.2}s
+    Iterations: avg {:.1}, min {}, max {}
     Best cost: {}
+    Avg cost: {}
+    Improvement avg: {:.2}%
     Improvement best: {:.2}%
     Solution: {:?}",
-        total_time as f64 / 1000.0,
-        // avg_time / 1000.0,
+        time_limit.as_secs(),
+        avg_time / 1000.0,
+        avg_iterations,
+        min_iterations,
+        max_iterations,
         best_cost,
-        // avg_cost,
-        // improvement_avg,
+        avg_cost,
+        improvement_avg,
         improvement_best,
         concat_solution(&best_solution)
     );
+
+    // Print frequency analysis
+    println!("\nFrequency analysis:");
+    let mut sorted_costs: Vec<&u128> = solution_counts.keys().collect();
+    sorted_costs.sort();
+
+    for cost in sorted_costs {
+        let count = solution_counts.get(cost).unwrap();
+        let percentage = (*count as f64 / runs as f64) * 100.0;
+        println!("  Cost {}: {} times ({:.1}%)", cost, count, percentage);
+    }
+
     true
 }
 
