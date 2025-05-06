@@ -1,0 +1,16 @@
+Implementer sekvensiell algoritme for maximal independent set.
+Implementer lubys algoritme (parallel random)
+
+Lag funksjon for å gjøre undirected graphs om til DAG
+  Generer random tall for hver vertex
+  Lag en kant for hver kant i grafen som går fra lav node til høy node
+
+Implementer algoritme på dag 
+  Finn alle noder me in degree 0, og legg til i queue for prossersingr
+  For hver node i queue: 
+    Legg den til i independent settet
+    Fjern naboer fra grafen 
+    ATOMIC:
+      oppdater in degrees av noder påvirket.
+      Hvis in degree blir 0 legg til i queue 
+
