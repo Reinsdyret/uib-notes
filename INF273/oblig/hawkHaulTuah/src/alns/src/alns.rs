@@ -39,8 +39,13 @@ pub fn alns_timed(
     let escape_size = 2;
 
     let mut delta_e: f64;
+    let mut time_since_last_report = Instant::now();
 
     while instant.elapsed() < time_limit {
+        if time_since_last_report.elapsed().as_secs() > 60 {
+            println!("Current best score for Call_{}_Vehicle_{} vehicles: {best_cost}", instance.num_calls, instance.num_vehicles - 1);
+            time_since_last_report = Instant::now();
+        }
         best_history.push(best_cost);
         incumbent_history.push(incumbent_cost);
         iterations += 1;

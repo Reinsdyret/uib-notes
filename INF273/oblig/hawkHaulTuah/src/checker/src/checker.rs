@@ -1,6 +1,7 @@
 use file_reader::parse_data::{Call, Instance, Loading, Travel, Vehicle};
 use log::{debug, error, info, log_enabled, warn, Level};
 use std::collections::HashSet;
+use rayon::prelude::*;
 
 pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>>) -> (u128, bool) {
     let calls = &instance.calls;
@@ -9,8 +10,6 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
 
     let mut cost: u128 = 0;
 
-    //println!("{routes:?}");
-    // Dont run last route as everything is outsourced
     for (i, route) in routes[0..routes.len() - 1].into_iter().enumerate() {
         // println!("{route:?}");
         let vehicle: &Vehicle = &instance.vehicles[i];
@@ -107,7 +106,7 @@ pub fn check_feasibility_and_get_cost(instance: &Instance, routes: &Vec<Vec<u32>
         cost += call.cost_outsource;
     }
 
-    return (cost, true);
+    (cost, true)
 }
 
 pub fn check_feasibility_one_vehicle(

@@ -52,12 +52,12 @@ fn main() {
 
     // Run 10 times for each file and collect statistics
     for (filename, time_limit) in &time_limits[0..3] {
-        run_alns_timed_multiple(*filename, false, &my_operators, *time_limit, 10);
+        run_alns_timed_multiple(*filename, false, &my_operators, *time_limit, 1);
     }
 
     (3..time_limits.len()).into_par_iter().map(|id| {
         let (filename, time_limit) = time_limits[id];
-        run_alns_timed_multiple(filename, false, &my_operators, time_limit, 10)
+        run_alns_timed_multiple(filename, false, &my_operators, time_limit, 1)
     }).collect::<Vec<_>>();
 }
 
